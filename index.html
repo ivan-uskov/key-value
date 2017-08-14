@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head></head>
+<body>Hello key value</body>
+<script>
+    class Hub
+    {
+        constructor() {
+            this.socket = new WebSocket("ws://localhost:8372/ctl");
+            this.socket.onmessage = (m) => console.log(m.data);
+            this.requestId = 0;
+        }
+
+        list() {
+            let myObj = {
+                Action: 'LIST',
+                Option1: '',
+                Option2: '',
+                RequestId: ++this.requestId
+            };
+            this.socket.send(JSON.stringify(myObj));
+        }
+
+        run(address) {
+            let myObj = {
+                Action: 'SET',
+                Option1: '' + address,
+                Option2: '',
+                RequestId: ++this.requestId
+            };
+            this.socket.send(JSON.stringify(myObj));
+        }
+
+        remove(address) {
+            let myObj = {
+                Action: 'REMOVE',
+                Option1: '' + address,
+                Option2: '',
+                RequestId: ++this.requestId
+            };
+            this.socket.send(JSON.stringify(myObj));
+        }
+    }
+    class Instance
+    {
+        constructor(port) {
+            this.socket = new WebSocket("ws://localhost:" + port + "/ws");
+            this.socket.onmessage = (m) => console.log(m.data);
+            this.requestId = 0;
+        }
+
+        list() {
+            let myObj = {
+                Action: 'LIST',
+                Option1: '',
+                Option2: '',
+                RequestId: ++this.requestId
+            };
+            this.socket.send(JSON.stringify(myObj));
+        }
+
+        set(key, value) {
+            let myObj = {
+                Action: 'SET',
+                Option1: '' + key,
+                Option2: '' + value,
+                RequestId: ++this.requestId
+            };
+            this.socket.send(JSON.stringify(myObj));
+        }
+
+        get(key) {
+            let myObj = {
+                Action: 'GET',
+                Option1: '' + key,
+                Option2: '',
+                RequestId: ++this.requestId
+            };
+            this.socket.send(JSON.stringify(myObj));
+        }
+
+        remove(address) {
+            let myObj = {
+                Action: 'REMOVE',
+                Option1: '' + address,
+                Option2: '',
+                RequestId: ++this.requestId
+            };
+            this.socket.send(JSON.stringify(myObj));
+        }
+    }
+</script>
+</html>
