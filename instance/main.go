@@ -11,8 +11,6 @@ import (
 	"errors"
 )
 
-var addr = flag.String("addr", ":8080", "http service address")
-
 func serveHome(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL)
 	if r.URL.Path != "/" {
@@ -45,7 +43,6 @@ func createGetter(storage storages.Storage) routers.RequestStrategy {
 	}
 }
 
-
 func createLister(reg storages.Storage) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
 		res, err := json.Marshal(reg.List())
@@ -66,6 +63,8 @@ func createRemover(reg storages.Storage) routers.RequestStrategy {
 		return ``, nil
 	}
 }
+
+var addr = flag.String("addr", ":8080", "http service address")
 
 func main() {
 	flag.Parse()
