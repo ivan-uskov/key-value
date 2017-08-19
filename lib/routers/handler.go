@@ -29,7 +29,9 @@ func createMessageHandler(handler requestHandler) ws.Handler {
 		var request Request
 		err := json.Unmarshal(message, &request)
 		if err != nil {
-			log.Println(fmt.Sprintf(`Message: '%s' parse failed: %s`, message, err.Error()))
+			msg := fmt.Sprintf(`Message: '%s' parse failed: %s`, message, err.Error())
+			log.Println(msg)
+			sendQueue <- []byte(msg)
 			return
 		}
 
