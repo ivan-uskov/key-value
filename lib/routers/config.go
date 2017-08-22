@@ -10,14 +10,12 @@ type Request struct {
 	Action string
 	Option1 string
 	Option2 string
-	RequestId int
 }
 
 type response struct {
 	Success bool
 	Error string
 	Result string
-	RequestId int
 }
 
 type requestHandler func (request Request) response

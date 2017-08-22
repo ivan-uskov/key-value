@@ -20,3 +20,13 @@ var (
 	newline = []byte{'\n'}
 	space   = []byte{' '}
 )
+
+type request struct {
+	RequestId int64
+	Payload string
+}
+
+type response struct {
+	RequestId int64
+	Payload string
+}

@@ -11,7 +11,7 @@ type Router interface {
 	SetGetter(s RequestStrategy)
 	SetLister(s RequestStrategy)
 	SetRemover(s RequestStrategy)
-	CreateWebSocketHandler() ws.Handler
+	CreateWebSocketHandler() ws.RequestHandler
 }
 
 type router struct {
@@ -53,7 +53,7 @@ func (r *router) getActionStrategy(action string) RequestStrategy {
 	}
 }
 
-func (r *router) CreateWebSocketHandler() ws.Handler {
+func (r *router) CreateWebSocketHandler() ws.RequestHandler {
 	requestProcessor := func(request Request) (string, error) {
 		strategy := r.getActionStrategy(request.Action)
 		return strategy(request)

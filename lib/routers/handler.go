@@ -19,30 +19,29 @@ func createRequestHandler(strategy RequestStrategy) requestHandler {
 			Success:   err == nil,
 			Error:     errorMsg,
 			Result:    value,
-			RequestId: request.RequestId,
 		}
 	}
 }
 
-func createMessageHandler(handler requestHandler) ws.Handler {
-	return func(message []byte, sendQueue chan []byte) {
+func createMessageHandler(handler requestHandler) ws.RequestHandler {
+	return func(message []byte) []byte {
 		var request Request
 		err := json.Unmarshal(message, &request)
 		if err != nil {
 			msg := fmt.Sprintf(`Message: '%s' parse failed: %s`, message, err.Error())
 			log.Println(msg)
-			sendQueue <- []byte(msg)
-			return
+			return []byte(msg)
 		}
 
 		response := handler(request)
 
 		responseJson, err := json.Marshal(response)
 		if err != nil {
-			log.Println(fmt.Sprintf(`Message: '%s' parse failed: %s`, message, err.Error()))
-			return
+			msg := fmt.Sprintf(`Message: '%s' encode response failed: %s`, message, err.Error())
+			log.Println(msg)
+			return []byte(msg)
 		}
 
-		sendQueue <- responseJson
+		return responseJson
 	}
 }

@@ -6,12 +6,15 @@ import (
 	"github.com/gorilla/websocket"
 	"time"
 	"bytes"
+	"encoding/json"
+	"fmt"
 )
 
-type Handler func(message []byte, sendQueue chan []byte)
+type handler func(message []byte, sendQueue chan []byte)
+type RequestHandler func(r []byte) []byte
 
 type WebSocketServer interface {
-	ServeWebSocket(w http.ResponseWriter, r *http.Request, handler Handler)
+	ServeWebSocket(w http.ResponseWriter, r *http.Request, handler RequestHandler)
 }
 
 type webSocketServer struct {
@@ -23,14 +26,17 @@ type connection struct {
 	send chan []byte
 }
 
-func (c *connection) runRead(handler Handler) {
+func (c *connection) runRead(handler handler) {
 	defer func() {
 		c.conn.Close()
 	}()
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	c.conn.SetPongHandler(func(string) error {
+		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
@@ -95,7 +101,35 @@ func NewWebSocketServer() WebSocketServer {
 	}
 }
 
-func (s *webSocketServer) ServeWebSocket(w http.ResponseWriter, r *http.Request, handler Handler) {
+func createWebSocketRequestHandler(rh RequestHandler) handler {
+	return func(message []byte, sendQueue chan []byte) {
+		var r request
+		err := json.Unmarshal(message, &r)
+		if err != nil {
+			msg := fmt.Sprintf(`Message: '%s' parse failed: %s`, message, err.Error())
+			log.Println(msg)
+			sendQueue <- []byte(msg)
+			return
+		}
+
+		resp := response{
+			RequestId: r.RequestId,
+			Payload: string(rh([]byte(r.Payload))),
+		}
+
+		responseJson, err := json.Marshal(resp)
+		if err != nil {
+			msg := fmt.Sprintf(`Message: '%s' parse failed: %s`, message, err.Error())
+			log.Println(msg)
+			sendQueue <- []byte(msg)
+			return
+		}
+
+		sendQueue <- responseJson
+	}
+}
+
+func (s *webSocketServer) ServeWebSocket(w http.ResponseWriter, r *http.Request, rh RequestHandler) {
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -104,5 +138,5 @@ func (s *webSocketServer) ServeWebSocket(w http.ResponseWriter, r *http.Request,
 	client := &connection{conn: conn, send: make(chan []byte, 256)}
 
 	go client.runWrite()
-	go client.runRead(handler)
+	go client.runRead(createWebSocketRequestHandler(rh))
 }

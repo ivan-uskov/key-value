@@ -13,9 +13,11 @@
 
         list() {
             let myObj = {
-                Action: 'LIST',
-                Option1: '',
-                Option2: '',
+                Payload: JSON.stringify({
+                    Action: 'LIST',
+                    Option1: '',
+                    Option2: '',
+                }),
                 RequestId: ++this.requestId
             };
             this.socket.send(JSON.stringify(myObj));
@@ -23,9 +25,11 @@
 
         run(address) {
             let myObj = {
-                Action: 'SET',
-                Option1: '' + address,
-                Option2: '',
+                Payload: JSON.stringify({
+                    Action: 'SET',
+                    Option1: '' + address,
+                    Option2: ''
+                }),
                 RequestId: ++this.requestId
             };
             this.socket.send(JSON.stringify(myObj));
@@ -33,9 +37,11 @@
 
         remove(address) {
             let myObj = {
-                Action: 'REMOVE',
-                Option1: '' + address,
-                Option2: '',
+                Payload: JSON.stringify({
+                    Action: 'REMOVE',
+                    Option1: '' + address,
+                    Option2: '',
+                }),
                 RequestId: ++this.requestId
             };
             this.socket.send(JSON.stringify(myObj));
@@ -51,9 +57,11 @@
 
         list() {
             let myObj = {
-                Action: 'LIST',
-                Option1: '',
-                Option2: '',
+                Payload: JSON.stringify({
+                    Action: 'LIST',
+                    Option1: '',
+                    Option2: '',
+                }),
                 RequestId: ++this.requestId
             };
             this.socket.send(JSON.stringify(myObj));
@@ -61,9 +69,11 @@
 
         set(key, value) {
             let myObj = {
-                Action: 'SET',
-                Option1: '' + key,
-                Option2: '' + value,
+                Payload: JSON.stringify({
+                    Action: 'SET',
+                    Option1: '' + key,
+                    Option2: '' + value,
+                }),
                 RequestId: ++this.requestId
             };
             this.socket.send(JSON.stringify(myObj));
@@ -71,9 +81,11 @@
 
         get(key) {
             let myObj = {
-                Action: 'GET',
-                Option1: '' + key,
-                Option2: '',
+                Payload: JSON.stringify({
+                    Action: 'GET',
+                    Option1: '' + key,
+                    Option2: '',
+                }),
                 RequestId: ++this.requestId
             };
             this.socket.send(JSON.stringify(myObj));
@@ -81,9 +93,11 @@
 
         remove(address) {
             let myObj = {
-                Action: 'REMOVE',
-                Option1: '' + address,
-                Option2: '',
+                Payload: JSON.stringify({
+                    Action: 'REMOVE',
+                    Option1: '' + address,
+                    Option2: '',
+                }),
                 RequestId: ++this.requestId
             };
             this.socket.send(JSON.stringify(myObj));
