@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"key-value/lib/ws"
-	"key-value/lib/storages"
 	"key-value/lib/routers"
 	"encoding/json"
 	"errors"
@@ -25,14 +24,14 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "../index.html")
 }
 
-func createSetter(storage storages.Storage) routers.RequestStrategy {
+func createSetter(s Storage) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
-		storage.Set(r.Option1, r.Option2)
+		s.Set(r.Option1, r.Option2)
 		return ``, nil
 	}
 }
 
-func createGetter(storage storages.Storage) routers.RequestStrategy {
+func createGetter(storage Storage) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
 		v, ok := storage.Get(r.Option1)
 		if !ok {
@@ -43,7 +42,7 @@ func createGetter(storage storages.Storage) routers.RequestStrategy {
 	}
 }
 
-func createLister(reg storages.Storage) routers.RequestStrategy {
+func createLister(reg Storage) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
 		res, err := json.Marshal(reg.List())
 		if err != nil {
@@ -54,7 +53,7 @@ func createLister(reg storages.Storage) routers.RequestStrategy {
 	}
 }
 
-func createRemover(reg storages.Storage) routers.RequestStrategy {
+func createRemover(reg Storage) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
 		if !reg.Remove(r.Option1) {
 			return ``, errors.New(`Not exists`)
@@ -69,8 +68,13 @@ var addr = flag.String("addr", ":8080", "http service address")
 func main() {
 	flag.Parse()
 
-	storage := storages.New()
-	server := ws.NewServer()
+	storage := New()
+	storage.AddSetHandler(func(key string, val string, ver int64) {
+		log.Printf("Set %s : %s : %d", key, val, ver)
+	})
+	storage.AddRemoveHandler(func(key string, ver int64) {
+		log.Printf("Remove %s : %d", key, ver)
+	})
 
 	router := routers.New()
 	router.SetSetter(createSetter(storage))
@@ -78,6 +82,7 @@ func main() {
 	router.SetRemover(createRemover(storage))
 	router.SetGetter(createGetter(storage))
 
+	server := ws.NewServer()
 	http.HandleFunc("/", serveHome)
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		server.Serve(w, r, router.CreateWebSocketHandler())
