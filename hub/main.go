@@ -65,14 +65,14 @@ func main() {
 	flag.Parse()
 
 	register := NewRegister()
-	server := ws.NewWebSocketServer()
+	server := ws.NewServer()
 	router := routers.New()
 	router.SetSetter(createSetter(register))
 	router.SetLister(createLister(register))
 	router.SetRemover(createRemover(register))
 
 	http.HandleFunc("/ctl", func(w http.ResponseWriter, r *http.Request) {
-		server.ServeWebSocket(w, r, router.CreateWebSocketHandler())
+		server.Serve(w, r, router.CreateWebSocketHandler())
 	})
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {

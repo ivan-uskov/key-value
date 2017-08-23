@@ -70,7 +70,7 @@ func main() {
 	flag.Parse()
 
 	storage := storages.New()
-	server := ws.NewWebSocketServer()
+	server := ws.NewServer()
 
 	router := routers.New()
 	router.SetSetter(createSetter(storage))
@@ -80,7 +80,7 @@ func main() {
 
 	http.HandleFunc("/", serveHome)
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		server.ServeWebSocket(w, r, router.CreateWebSocketHandler())
+		server.Serve(w, r, router.CreateWebSocketHandler())
 	})
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {

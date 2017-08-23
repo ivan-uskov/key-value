@@ -13,20 +13,20 @@ import (
 type handler func(message []byte, sendQueue chan []byte)
 type RequestHandler func(r []byte) []byte
 
-type WebSocketServer interface {
-	ServeWebSocket(w http.ResponseWriter, r *http.Request, handler RequestHandler)
+type Server interface {
+	Serve(w http.ResponseWriter, r *http.Request, handler RequestHandler)
 }
 
-type webSocketServer struct {
+type server struct {
 	upgrader websocket.Upgrader
 }
 
-type connection struct {
+type serverConnection struct {
 	conn *websocket.Conn
 	send chan []byte
 }
 
-func (c *connection) runRead(handler handler) {
+func (c *serverConnection) runRead(handler handler) {
 	defer func() {
 		c.conn.Close()
 	}()
@@ -50,7 +50,7 @@ func (c *connection) runRead(handler handler) {
 	}
 }
 
-func (c *connection) runWrite() {
+func (c *serverConnection) runWrite() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -89,8 +89,8 @@ func (c *connection) runWrite() {
 	}
 }
 
-func NewWebSocketServer() WebSocketServer {
-	return &webSocketServer{
+func NewServer() Server {
+	return &server{
 		websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
@@ -101,7 +101,7 @@ func NewWebSocketServer() WebSocketServer {
 	}
 }
 
-func createWebSocketRequestHandler(rh RequestHandler) handler {
+func createServerRequestHandler(rh RequestHandler) handler {
 	return func(message []byte, sendQueue chan []byte) {
 		var r request
 		err := json.Unmarshal(message, &r)
@@ -129,14 +129,14 @@ func createWebSocketRequestHandler(rh RequestHandler) handler {
 	}
 }
 
-func (s *webSocketServer) ServeWebSocket(w http.ResponseWriter, r *http.Request, rh RequestHandler) {
+func (s *server) Serve(w http.ResponseWriter, r *http.Request, rh RequestHandler) {
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	client := &connection{conn: conn, send: make(chan []byte, 256)}
+	client := &serverConnection{conn: conn, send: make(chan []byte, 256)}
 
 	go client.runWrite()
-	go client.runRead(createWebSocketRequestHandler(rh))
+	go client.runRead(createServerRequestHandler(rh))
 }
