@@ -1,18 +1,41 @@
 package main
 
 import (
-	"flag"
-	"key-value/lib/ws"
-	"net/http"
-	"log"
-	"key-value/lib/routers"
-	"key-value/lib/processes"
-	"fmt"
 	"encoding/json"
 	"errors"
+	"flag"
+	"fmt"
+	"key-value/lib/processes"
+	"key-value/lib/routers"
+	"key-value/lib/ws"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
 )
 
 var addr = flag.String("addr", ":8372", "http service address")
+
+func getInstanceExecutablePath() (string, error) {
+	exePath, err := os.Executable()
+	exeDir := filepath.Dir(exePath)
+
+	filename := "instance"
+	if runtime.GOOS == "windows" {
+		filename = "instance.exe"
+	}
+	candidates := []string{filename, filepath.Join("..", "instance", filename)}
+	for _, candidate := range candidates {
+		instancePath := filepath.Join(exeDir, candidate)
+		_, err = os.Stat(instancePath)
+		if err != nil {
+			continue
+		}
+		return instancePath, nil
+	}
+	return "", err
+}
 
 func createSetter(reg Register) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
@@ -22,7 +45,13 @@ func createSetter(reg Register) routers.RequestStrategy {
 
 		args := []string{}
 		args = append(args, fmt.Sprintf(`--addr=%s`, r.Option1))
-		reg.Add(r.Option1, processes.Run(`../instance/instance.exe`, args))
+		instancePath, err := getInstanceExecutablePath()
+		if err != nil {
+			return "", err
+		}
+
+		worker := processes.Run(instancePath, args)
+		reg.Add(r.Option1, worker)
 
 		return ``, nil
 	}
