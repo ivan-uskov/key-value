@@ -6,15 +6,17 @@ import (
 	"github.com/gorilla/websocket"
 	"encoding/json"
 	"time"
+	"errors"
 )
 
 type ClientConnection interface {
 	Send(msg string) (<-chan string, error)
+	SendSync(msg string) (string, error)
 }
 
 type clientConnection struct {
 	requestId int64
-	queries   map[int64](chan string)
+	queries   map[int64]chan string
 	ws        *websocket.Conn
 	done      chan struct{}
 }
@@ -75,6 +77,20 @@ func (c *clientConnection) Send(msg string) (<-chan string, error) {
 		}
 	}()
 	return resultChan, nil
+}
+
+func (c *clientConnection) SendSync(msg string) (string, error) {
+	mc, err := c.Send(msg)
+	if err != nil {
+		return "", err
+	}
+
+	select {
+	case <-time.After(10 * time.Second):
+		return "", errors.New("timeout")
+	case result := <-mc:
+		return result, nil
+	}
 }
 
 func NewClient(address string, path string) ClientConnection {
