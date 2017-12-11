@@ -16,13 +16,24 @@ class Config
 	}
 
 	/**
+	 * TODO{sergey.shambir}: add port param
 	 * Returns URL for instance with given suffix
-	 * @param {String} suffix 
+	 * @return string
 	 */
-	getInstanceUrl(suffix) {
-		suffix = '' + suffix
-		return `ws://${this.host}:${this.port}/ws${suffix}`;
+	getInstanceUrl() {
+		let nextPort = parseInt(this.port, 10) + 1;
+		return `${this.host}:${nextPort}`;
 	}
+
+    /**
+     * Returns URL for instance with given suffix
+     * @param {String} suffix
+     */
+    getFullInstanceUrl(suffix) {
+        suffix = '' + suffix;
+        let nextPort = parseInt(this.port, 10) + 1;
+        return `ws://${this.host}:${nextPort}/ws${suffix}`;
+    }
 
 	isVerbose()
 	{
@@ -65,7 +76,7 @@ class BaseApiClient
 	}
 
 	_onclose(event) {
-		const status = event.wasClean ? 'closed' : 'aborted'
+		const status = event.wasClean ? 'closed' : 'aborted';
 		this._log('connection ', status, 'code: ', event.code, ', reason: ', event.reason);
 	}
 
@@ -134,7 +145,7 @@ class HubApiClient extends BaseApiClient
 	 */
 	list() {
 		return this.sendRequest('LIST').then((data) => {
-			const items = JSON.parse(data)
+			const items = JSON.parse(data);
 			if (items instanceof Array) {
 				return items;
 			}
@@ -170,7 +181,7 @@ class InstanceApiClient extends BaseApiClient
 	 * @param {String} suffix - instance URL suffix
 	 */
 	constructor(config, suffix) {
-		super(config.getInstanceUrl(suffix), config.isVerbose());
+		super(config.getFullInstanceUrl(suffix), config.isVerbose());
 	}
 
 	/**
@@ -179,7 +190,7 @@ class InstanceApiClient extends BaseApiClient
 	 */
 	list() {
 		return this.sendRequest('LIST').then((data) => {
-			const items = JSON.parse(data)
+			const items = JSON.parse(data);
 			if (items instanceof Array) {
 				return items;
 			}
