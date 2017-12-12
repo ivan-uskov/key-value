@@ -6,5 +6,16 @@
 <meta charset="utf-8"></meta>
 <script type="text/javascript" src="js-sdk/index.js"></script>
 <script>
+    let config = new Config('localhost', '8372', true);
+    window.hub = new HubApiClient(config);
+    console.log('variable hub (HubApiClient) created!');
+
+    setTimeout(() => {
+        console.log('will run new instance on port 8375');
+        window.hub.run('8375').then((result) => {
+            window.instance = result;
+            console.log('variable instance (InstanceApiClient) created!');
+        });
+    }, 500);
 </script>
 </html>
