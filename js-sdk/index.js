@@ -62,8 +62,16 @@ class BaseApiClient
         this.socket.onclose = this._onclose.bind(this);
         this.socket.onmessage = this._onmessage.bind(this);
         this.socket.onerror = this._onerror.bind(this);
+        this.pendingSend = [];
+        this.isOpen = false;
     }
 
+    /**
+     * Sends request if socket is open, otherwise adds to pending requests.
+     * @param {string} action 
+     * @param {string} option1 
+     * @param {string} option2 
+     */
     sendRequest(action, option1 = '', option2 = '') {
         return new Promise((resolve, reject) => {
             let requestId = ++this.requestId;
@@ -71,15 +79,36 @@ class BaseApiClient
                 'resolve': resolve,
                 'reject': reject
             };
-            this._sendRequestBySocket(requestId, action, option1, option2);
+            let send = this._sendRequestBySocket.bind(
+                this, requestId, action, option1, option2);
+            if (this.isOpen)
+            {
+                send();
+            }
+            else
+            {
+                this.pendingSend.push(send);
+            }
         });
     }
 
     _onopen() {
+        this.isOpen = true;
+        this._sendAllPending();
         this._log('connection established with ', this.url);
     }
 
+    _sendAllPending()
+    {
+        for (let index in this.pendingSend)
+        {
+            this.pendingSend[index]();
+        }
+        this.pendingSend = [];
+    }
+
     _onclose(event) {
+        this.isOpen = false;
         const status = event.wasClean ? 'closed' : 'aborted';
         this._log('connection ', status, 'code: ', event.code, ', reason: ', event.reason);
     }
