@@ -1,0 +1,23 @@
+
+.editor-card-add-form
+{
+    float: right;
+    padding: 10px;
+}
+
+#editor-load-spinner
+{
+    width: 100%;
+    padding-top: 100px;
+}
+
+#editor-load-spinner div
+{
+    display: block;
+    margin: auto;
+}
+
+#editor-content-grid
+{
+    visibility: hidden;
+}
