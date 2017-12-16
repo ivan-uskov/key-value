@@ -10,7 +10,7 @@
     window.hub = new HubApiClient(config);
     console.log('variable hub (HubApiClient) created!');
     console.log('will run new instance on port 8375');
-    window.hub.run('8375').then((result) => {
+    window.hub.get('8375').then((result) => {
         window.instance = result;
         console.log('variable instance (InstanceApiClient) created!');
     });

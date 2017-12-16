@@ -187,8 +187,24 @@ class HubApiClient extends BaseApiClient
     }
 
     /**
+     * Checks if instance on given port exists, run a new one if doesn't.
+     * @param {String} port 
+     * @returns {Promise<InstanceApiClient>}
+     */
+    get(port) {
+        let instanceConfig = new Config(this.config.host, port, this.config.isVerbose());
+        return this.list().then((addressList) => {
+            if (addressList.indexOf(instanceConfig.getAddress()) >= 0) {
+                return new InstanceApiClient(instanceConfig);
+            }
+            return this.run(port);
+        });
+    }
+
+    /**
      * Runs new key-value storage instance on URL with given suffix.
      * @param {String} port 
+     * @returns {Promise<InstanceApiClient>}
      */
     run(port) {
         let instanceConfig = new Config(this.config.host, port, this.config.isVerbose());
@@ -218,13 +234,13 @@ class InstanceApiClient extends BaseApiClient
     }
 
     /**
-     * Lists all keys in storage
-     * Returns array of strings
+     * Lists all keys and values in storage
+     * @returns {Object} dictionary which maps keys to values.
      */
     list() {
         return this.sendRequest('LIST').then((data) => {
             const items = JSON.parse(data);
-            if (items instanceof Array) {
+            if (items instanceof Object) {
                 return items;
             }
             throw new Error('internal error: LIST returned value of type ' + (typeof items));
