@@ -5,23 +5,23 @@ class Editor {
      * @param {InstanceApiCliet} client 
      */
     constructor(client) {
-        console.log('started Editor ctor');
         this.client = client;
         this.showContent();
         this.connectButtons();
         this.updateTable();
-        console.log('finished Editor ctor');
     }
 
     showContent() {
         let spinner = document.querySelector('#editor-load-spinner');
         let grid = document.querySelector('#editor-content-grid');
         spinner.style.visibility = 'hidden';
+        spinner.style.display = 'none';
         grid.style.visibility = 'visible';
     }
     
     connectButtons() {
-        let addButton = document.getElementById('editor-add-form-submit');
+        let addButton = document.getElementById('editor-add-form-add');
+        let removeButton = document.getElementById('editor-add-form-remove');
         let keyInput = document.getElementById('editor-add-form-key');
         let valueInput = document.getElementById('editor-add-form-value');
         addButton.addEventListener('click', (event) => {
@@ -29,13 +29,25 @@ class Editor {
             let value = valueInput.value;
             if (key.length != 0 && value.length != 0)
             {
-                this.submitKeyValue(key, value);
+                this.addKeyValue(key, value);
+            }
+        });
+        removeButton.addEventListener('click', (event) => {
+            let key = keyInput.value;
+            if (key.length != 0)
+            {
+                this.removeKey(key);
             }
         });
     }
 
-    async submitKeyValue(key, value) {
+    async addKeyValue(key, value) {
         await this.client.set(key, value);
+        this.updateTable();
+    }
+
+    async removeKey(key, value) {
+        await this.client.remove(key);
         this.updateTable();
     }
     
@@ -62,11 +74,14 @@ class Editor {
             let row = document.importNode(rowTemplate.content, true);
             tbody.appendChild(row);
         }
+
+        // Force MDL to update - table has new elements.
+        componentHandler.upgradeAllRegistered();
     }
 }
 
 function getInstanceApiClient() {
-    let config = new Config('localhost', '8372', true);
+    let config = new Config('localhost', '8372', false);
     let hub = new HubApiClient(config);
     return hub.get('8375');
 }

@@ -22,15 +22,18 @@
             <div class="mdl-textfield mdl-js-textfield">
               <input class="mdl-textfield__input" type="text" required id="editor-add-form-key">
               <label class="mdl-textfield__label" for="editor-add-form-key">Key...</label>
-              <span class="mdl-textfield__error">Should be non-empty</span>
+              <span class="mdl-textfield mdl-data-table--selectable__error">Should be non-empty</span>
             </div>
             <div class="mdl-textfield mdl-js-textfield">
               <input class="mdl-textfield__input" type="text" required id="editor-add-form-value">
               <label class="mdl-textfield__label" for="editor-add-form-value">Value...</label>
               <span class="mdl-textfield__error">Should be non-empty</span>
             </div>
-            <button id="editor-add-form-submit" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored">
+            <button id="editor-add-form-add" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored">
               Add
+            </button>
+            <button id="editor-add-form-remove" class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent">
+              Remove
             </button>
           </form>
         </div>
