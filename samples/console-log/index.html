@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"></meta>
+    <title>Key-Value API demo</title>
+    <script type="text/javascript" src="../../js-sdk/index.js"></script>
+    <script>
+        async function connect() {
+            // hub uses port 8372 by default
+            let config = new Config('localhost', '8372', false);
+            let hub = new HubApiClient(config);
+        
+            // will run new instance on port 8375 or connect existing instance
+            let instance = await hub.get('8375');
+        
+            // list existing key-value pairs
+            let data = await instance.list();
+            console.log('key-value mapping:', data);
+        
+            // add a new one and list again
+            await instance.set('my key', 'my value');
+            data = await instance.list();
+            console.log('key-value mapping:', data);
+        
+            // remove key and list again
+            await instance.remove('my key');
+            data = await instance.list();
+            console.log('key-value mapping:', data);
+        }
+        connect();
+    </script>
+  </head>
+  <body>
+    Open Developer Tools (F12) and see console.
+  </body>
+</html>
