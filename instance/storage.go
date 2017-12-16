@@ -89,7 +89,7 @@ func (s *storage) Remove(key string) bool {
 func (s *storage) List() map[string]string {
 	result := make(map[string]string)
 	for key, value := range s.data.Items() {
-		result[key] = value.(string)
+		result[key] = value.(record).value
 	}
 	return result
 }
