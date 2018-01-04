@@ -31,7 +31,7 @@ class Config
      * Returns URL for instance.
      * @return {string}
      */
-    getKeyValueApiUrl(suffix) {
+    getKeyValueApiUrl() {
         return `ws://${this.host}:${this.port}/ws`;
     }
 
@@ -53,10 +53,10 @@ class BaseApiClient
      */
     constructor(url, verbose) {
         this.url = url;
-        this.socket = new WebSocket(url);
         this.verbose = verbose;
         this.requestId = 0;
         this.requestMapping = {};
+        this.socket = new WebSocket(url);
 
         this.socket.onopen = this._onopen.bind(this);
         this.socket.onclose = this._onclose.bind(this);
@@ -68,9 +68,9 @@ class BaseApiClient
 
     /**
      * Sends request if socket is open, otherwise adds to pending requests.
-     * @param {string} action 
-     * @param {string} option1 
-     * @param {string} option2 
+     * @param {string} action
+     * @param {string} option1
+     * @param {string} option2
      */
     sendRequest(action, option1 = '', option2 = '') {
         return new Promise((resolve, reject) => {
@@ -100,17 +100,11 @@ class BaseApiClient
 
     _sendAllPending()
     {
-        for (let index in this.pendingSend)
+        for (let value of this.pendingSend)
         {
-            this.pendingSend[index]();
+            value();
         }
         this.pendingSend = [];
-    }
-
-    _onclose(event) {
-        this.isOpen = false;
-        const status = event.wasClean ? 'closed' : 'aborted';
-        this._log('connection ', status, 'code: ', event.code, ', reason: ', event.reason);
     }
 
     _sendRequestBySocket(requestId, action, option1 = '', option2 = '') {
@@ -127,21 +121,29 @@ class BaseApiClient
 
     _parseResponse(data) {
         const response = JSON.parse(data);
-        const requestId = response['RequestId'];
+        const requestId = response.RequestId;
         if (requestId in this.requestMapping)
         {
-            const payload = JSON.parse(response['Payload']);
+            const payload = JSON.parse(response.Payload);
             const handlers = this.requestMapping[requestId];
-            if (Boolean(payload['Success']))
+            if (Boolean(payload.Success))
             {
-                handlers.resolve(payload['Result']);
+                handlers.resolve(payload.Result);
             }
             else
             {
-                handlers.reject('' + payload['Error']);            
+                handlers.reject(new Error('' + payload.Error));            
             }
             delete handlers[requestId];
         }
+    }
+
+    _rejectAll(message) {
+        for (let requestId of this.requestMapping)
+        {
+            this.requestMapping[requestId].reject(new Error(message));
+        }
+        this.requestMapping = {};
     }
 
     _onmessage(event) {
@@ -150,7 +152,17 @@ class BaseApiClient
     }
 
     _onerror(error) {
+        // With WebSockets, onerror is always followed by termination of connection.
+        this._rejectAll('socket error: ' + error);
         this._log('got error: ', error);
+    }
+
+    _onclose(event) {
+        this._rejectAll('connection closed with code ' + event.code);
+
+        this.isOpen = false;
+        const status = event.wasClean ? 'closed' : 'aborted';
+        this._log('connection ', status, 'code: ', event.code, ', reason: ', event.reason);
     }
 
     _log(...args) {
@@ -171,7 +183,7 @@ class HubApiClient extends BaseApiClient
         super(config.getControlUrl(), config.isVerbose());
         this.config = config;
     }
-    
+
     /**
      * Lists all running instances
      * Returns array of strings
@@ -212,7 +224,7 @@ class HubApiClient extends BaseApiClient
             return new InstanceApiClient(instanceConfig);
         });
     }
-    
+
     /**
      * Stops key-value storage instance.
      * @param {String} suffix 
