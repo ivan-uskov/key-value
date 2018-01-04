@@ -20,4 +20,5 @@
 #editor-content-grid
 {
     visibility: hidden;
+    display: none;
 }

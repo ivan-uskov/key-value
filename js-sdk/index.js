@@ -139,9 +139,9 @@ class BaseApiClient
     }
 
     _rejectAll(message) {
-        for (let requestId of this.requestMapping)
+        for (let handlers of Object.values(this.requestMapping))
         {
-            this.requestMapping[requestId].reject(new Error(message));
+            handlers.reject(new Error(message));
         }
         this.requestMapping = {};
     }
@@ -153,7 +153,6 @@ class BaseApiClient
 
     _onerror(error) {
         // With WebSockets, onerror is always followed by termination of connection.
-        this._rejectAll('socket error: ' + error);
         this._log('got error: ', error);
     }
 
@@ -162,7 +161,7 @@ class BaseApiClient
 
         this.isOpen = false;
         const status = event.wasClean ? 'closed' : 'aborted';
-        this._log('connection ', status, 'code: ', event.code, ', reason: ', event.reason);
+        this._log('connection ' + status + ', event: ', event);
     }
 
     _log(...args) {
