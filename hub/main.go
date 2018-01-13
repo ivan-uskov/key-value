@@ -17,41 +17,25 @@ import (
 
 var addr = flag.String("addr", ":8372", "http service address")
 
-func getInstanceExecutablePath() (string, error) {
-	exePath, err := os.Executable()
-	exeDir := filepath.Dir(exePath)
-
-	filename := "instance"
-	if runtime.GOOS == "windows" {
-		filename = "instance.exe"
-	}
-	candidates := []string{filename, filepath.Join("..", "instance", filename)}
-	for _, candidate := range candidates {
-		instancePath := filepath.Join(exeDir, candidate)
-		_, err = os.Stat(instancePath)
-		if err != nil {
-			continue
-		}
-		return instancePath, nil
-	}
-	return "", err
-}
-
 func createSetter(reg Register) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
 		if reg.Exists(r.Option1) {
+			i, ok := reg.Get(r.Option1)
+			if ok {
+				if i.Ping() {
+
+				} else {
+
+				}
+			}
 			return ``, errors.New(`Instance already started`)
 		}
 
-		args := []string{}
-		args = append(args, fmt.Sprintf(`--addr=%s`, r.Option1))
-		instancePath, err := getInstanceExecutablePath()
+		i, err := NewInstance(r.Option1)
 		if err != nil {
 			return "", err
 		}
-
-		worker := processes.Run(instancePath, args)
-		reg.Add(r.Option1, worker)
+		reg.Add(r.Option1, i)
 
 		return ``, nil
 	}
@@ -60,7 +44,7 @@ func createSetter(reg Register) routers.RequestStrategy {
 func createLister(reg Register) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
 		items := reg.List()
-		result := []string{}
+		result := make([]string, 0, len(items))
 		for address := range items {
 			result = append(result, address)
 		}
@@ -76,14 +60,14 @@ func createLister(reg Register) routers.RequestStrategy {
 
 func createRemover(reg Register) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
-		worker, ok := reg.Get(r.Option1)
+		i, ok := reg.Get(r.Option1)
 		if !ok {
-			return ``, errors.New(`Item not exists`)
+			return ``, errors.New(`item not exists`)
 		}
 
-		worker.Kill()
+		i.Kill()
 		if !reg.Remove(r.Option1) {
-			return ``, errors.New(`Remove error`)
+			return ``, errors.New(`remove error`)
 		}
 
 		return ``, nil
@@ -95,10 +79,10 @@ func main() {
 
 	register := NewRegister()
 	server := ws.NewServer()
-	router := routers.New()
-	router.SetSetter(createSetter(register))
-	router.SetLister(createLister(register))
-	router.SetRemover(createRemover(register))
+	router := routers.NewRouter()
+	router.AddRoute(routers.SET, createSetter(register))
+	router.AddRoute(routers.LIST, createLister(register))
+	router.AddRoute(routers.REMOVE, createRemover(register))
 
 	http.HandleFunc("/ctl", func(w http.ResponseWriter, r *http.Request) {
 		server.Serve(w, r, router.CreateWebSocketHandler())

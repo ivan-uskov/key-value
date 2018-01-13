@@ -10,11 +10,11 @@ type registerStructure struct {
 }
 
 type Register interface {
-	Add(address string, worker processes.Worker)
+	Add(address string, i Instance)
 	Exists(address string) bool
 	Remove(key string) bool
-	Get(key string) (processes.Worker, bool)
-	List() map[string]processes.Worker
+	Get(key string) (Instance, bool)
+	List() map[string]Instance
 }
 
 func NewRegister() Register {
@@ -23,10 +23,10 @@ func NewRegister() Register {
 	}
 }
 
-func (s *registerStructure) Get(key string) (processes.Worker, bool) {
+func (s *registerStructure) Get(key string) (Instance, bool) {
 	data, ok := s.data.Get(key)
 	if ok {
-		return data.(processes.Worker), ok
+		return data.(Instance), ok
 	} else {
 		return nil, ok
 	}
@@ -36,8 +36,8 @@ func (s *registerStructure) Exists(address string) bool {
 	return s.data.Has(address)
 }
 
-func (s *registerStructure) Add(address string, worker processes.Worker) {
-	s.data.Set(address, worker)
+func (s *registerStructure) Add(address string, i Instance) {
+	s.data.Set(address, i)
 }
 
 func (s *registerStructure) Remove(key string) bool {
@@ -45,10 +45,10 @@ func (s *registerStructure) Remove(key string) bool {
 	return ok
 }
 
-func (s *registerStructure) List() map[string]processes.Worker {
-	result := make(map[string]processes.Worker)
+func (s *registerStructure) List() map[string]Instance {
+	result := make(map[string]Instance)
 	for key, value := range s.data.Items() {
-		result[key] = value.(processes.Worker)
+		result[key] = value.(Instance)
 	}
 	return result
 }

@@ -1,11 +1,13 @@
 package routers
 
 const (
-	GET_DATA = `GET`
-	SET_DATA = `SET`
-	LIST_DATA = `LIST`
-	REMOVE_DATA = `REMOVE`
+	GET    = `GET`
+	SET    = `SET`
+	LIST   = `LIST`
+	REMOVE = `REMOVE`
+	PING   = `PING`
 )
+
 type Request struct {
 	Action string
 	Option1 string

@@ -7,50 +7,27 @@ import (
 )
 
 type Router interface {
-	SetSetter(s RequestStrategy)
-	SetGetter(s RequestStrategy)
-	SetLister(s RequestStrategy)
-	SetRemover(s RequestStrategy)
+	AddRoute(address string, s RequestStrategy)
 	CreateWebSocketHandler() ws.RequestHandler
 }
 
 type router struct {
-	getter  RequestStrategy
-	setter  RequestStrategy
-	lister  RequestStrategy
-	remover RequestStrategy
+	routing map[string]RequestStrategy
 }
 
-func (r *router) SetSetter(s RequestStrategy) {
-	r.setter = s
-}
-
-func (r *router) SetGetter(s RequestStrategy) {
-	r.getter = s
-}
-
-func (r *router) SetLister(s RequestStrategy) {
-	r.lister = s
-}
-
-func (r *router) SetRemover(s RequestStrategy) {
-	r.remover = s
+func (r *router) AddRoute(address string, s RequestStrategy) {
+	r.routing[address] = s
 }
 
 func (r *router) getActionStrategy(action string) RequestStrategy {
-	if action == GET_DATA {
-		return r.getter
-	} else if action == SET_DATA {
-		return r.setter
-	} else if action == LIST_DATA {
-		return r.lister
-	} else if action == REMOVE_DATA {
-		return r.remover
+	s, ok := r.routing[action]
+	if !ok {
+		return func(r Request) (string, error) {
+			return ``, errors.New(fmt.Sprintf(`Unexpected action: %d`, r.Action))
+		}
 	}
 
-	return func(r Request) (string, error) {
-		return ``, errors.New(fmt.Sprintf(`Unexpected action: %d`, r.Action))
-	}
+	return s
 }
 
 func (r *router) CreateWebSocketHandler() ws.RequestHandler {
@@ -62,17 +39,6 @@ func (r *router) CreateWebSocketHandler() ws.RequestHandler {
 	return createMessageHandler(createRequestHandler(requestProcessor))
 }
 
-func createDefaultStrategy(name string) RequestStrategy {
-	return func(r Request) (string, error) {
-		return ``, errors.New(name + ` not supported`)
-	}
-}
-
-func New() Router {
-	return &router{
-		getter: createDefaultStrategy(GET_DATA),
-		setter: createDefaultStrategy(SET_DATA),
-		lister: createDefaultStrategy(LIST_DATA),
-		remover: createDefaultStrategy(REMOVE_DATA),
-	}
+func NewRouter() Router {
+	return &router{routing: make(map[string]RequestStrategy)}
 }

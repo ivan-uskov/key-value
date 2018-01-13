@@ -8,21 +8,10 @@ import (
 	"key-value/lib/routers"
 	"encoding/json"
 	"errors"
+	"time"
+	"os"
+	"golang.org/x/tools/cmd/bundle/testdata/src/initial"
 )
-
-func serveHome(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL)
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	http.ServeFile(w, r, "../index.html")
-}
 
 func createSetter(s Storage) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
@@ -63,7 +52,11 @@ func createRemover(reg Storage) routers.RequestStrategy {
 	}
 }
 
+
 var addr = flag.String("addr", ":8080", "http service address")
+
+const dataPath = "storage.data"
+const persistenceDelay = 2 * time.Second
 
 func main() {
 	flag.Parse()
@@ -76,14 +69,20 @@ func main() {
 		log.Printf("Remove %s : %d", key, ver)
 	})
 
-	router := routers.New()
-	router.SetSetter(createSetter(storage))
-	router.SetLister(createLister(storage))
-	router.SetRemover(createRemover(storage))
-	router.SetGetter(createGetter(storage))
+	p := NewPersister(dataPath, storage.List)
+	p.Load(storage.Set)
+	p.Run(persistenceDelay)
+
+	router := routers.NewRouter()
+	router.AddRoute(routers.GET, createGetter(storage))
+	router.AddRoute(routers.SET, createSetter(storage))
+	router.AddRoute(routers.LIST, createLister(storage))
+	router.AddRoute(routers.REMOVE, createRemover(storage))
+	router.AddRoute(routers.PING, func(r routers.Request) (string, error) {
+		return `1`, nil
+	})
 
 	server := ws.NewServer()
-	http.HandleFunc("/", serveHome)
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		server.Serve(w, r, router.CreateWebSocketHandler())
 	})

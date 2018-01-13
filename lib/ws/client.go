@@ -12,6 +12,7 @@ import (
 type ClientConnection interface {
 	Send(msg string) (<-chan string, error)
 	SendSync(msg string) (string, error)
+	Close()
 }
 
 type clientConnection struct {
@@ -48,7 +49,16 @@ func (c *clientConnection) runReader() {
 		}
 
 		c.handleResponse(&response)
+		select {
+			case<- c.done:
+				return
+		}
 	}
+}
+
+func (c *clientConnection) Close() {
+	c.done <- struct{}{}
+	c.ws.Close()
 }
 
 func (c *clientConnection) Send(msg string) (<-chan string, error) {
@@ -87,28 +97,26 @@ func (c *clientConnection) SendSync(msg string) (string, error) {
 
 	select {
 	case <-time.After(10 * time.Second):
-		return "", errors.New("timeout")
+		return ``, errors.New("timeout")
 	case result := <-mc:
 		return result, nil
 	}
 }
 
-func NewClient(address string, path string) ClientConnection {
+func NewClient(address string, path string) (ClientConnection, error) {
 	u := url.URL{Scheme: "ws", Host: address, Path: "/" + path}
-	log.Printf("connecting to %s", u.String())
-
 	rawConnection, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		log.Fatal("dial:", err)
+		return nil, err
 	}
 
 	con := &clientConnection{
 		requestId: 0,
-		queries:   make(map[int64](chan string)),
+		queries:   make(map[int64]chan string),
 		ws:        rawConnection,
 		done:      make(chan struct{}),
 	}
 
 	go con.runReader()
-	return con
+	return con, nil
 }

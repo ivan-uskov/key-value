@@ -29,15 +29,20 @@ func createWorker() * worker {
 	return &w
 }
 
-func Run(cmd string, args []string) Worker {
+func Run(cmd string, args []string) (Worker, error) {
 	w := createWorker()
 
+	errChan := make(chan error)
 	go func() {
 		command := exec.Command(cmd, args...)
 		successChan := make(chan bool)
 		w.endWorkersWaitGroup.Add(1)
 		fmt.Println("Start command", cmd, args)
-		command.Start()
+		err := command.Start()
+		errChan <- err
+		if err != nil {
+			return
+		}
 
 		go func() {
 			select {
@@ -50,7 +55,7 @@ func Run(cmd string, args []string) Worker {
 			}
 		}()
 
-		err := command.Wait()
+		err = command.Wait()
 		w.endWorkersWaitGroup.Done()
 
 		if err != nil {
@@ -60,5 +65,5 @@ func Run(cmd string, args []string) Worker {
 		successChan <- true
 	} ()
 
-	return w
+	return w, <-errChan
 }
