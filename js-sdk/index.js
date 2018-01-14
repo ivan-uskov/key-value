@@ -1,7 +1,6 @@
-class Config
-{
+class Config {
     /**
-     * @param {string} host - domain or IP address, e.g. 'localhost' 
+     * @param {string} host - domain or IP address, e.g. 'localhost'
      * @param {string} port - port number, e.g. 8372
      * @param {Boolean} verbose - should use versbose logging?
      */
@@ -39,14 +38,14 @@ class Config
      * Returns true if logging should be verbose.
      * @return {Boolean}
      */
-    isVerbose()
-    {
+    isVerbose() {
         return this.verbose;
     }
 }
 
-class BaseApiClient
-{
+const RECONNECTION_TIMEOUT = 1000;
+
+class BaseApiClient {
     /**
      * @param {string} url
      * @param {boolean} verbose
@@ -54,16 +53,16 @@ class BaseApiClient
     constructor(url, verbose) {
         this.url = url;
         this.verbose = verbose;
-        this.requestId = 0;
-        this.requestMapping = {};
-        this.socket = new WebSocket(url);
+        this.connectionTimes = 0;
+        this.connectionUpdatedHandler = null;
+        this._createConnection();
+    }
 
-        this.socket.onopen = this._onopen.bind(this);
-        this.socket.onclose = this._onclose.bind(this);
-        this.socket.onmessage = this._onmessage.bind(this);
-        this.socket.onerror = this._onerror.bind(this);
-        this.pendingSend = [];
-        this.isOpen = false;
+    /**
+     * @param h () => void
+     */
+    addConnectionUpdatedHandler(h) {
+        this.connectionUpdatedHandler = h;
     }
 
     /**
@@ -81,15 +80,30 @@ class BaseApiClient
             };
             let send = this._sendRequestBySocket.bind(
                 this, requestId, action, option1, option2);
-            if (this.isOpen)
-            {
+            if (this.isOpen) {
                 send();
             }
-            else
-            {
+            else {
                 this.pendingSend.push(send);
             }
         });
+    }
+
+    /**
+     * @protected
+     */
+    _createConnection() {
+        this.requestId = 0;
+        this.requestMapping = {};
+        this.socket = new WebSocket(this.url);
+
+        this.socket.onopen = this._onopen.bind(this);
+        this.socket.onclose = this._onclose.bind(this);
+        this.socket.onmessage = this._onmessage.bind(this);
+        this.socket.onerror = this._onerror.bind(this);
+        this.pendingSend = [];
+        this.isOpen = false;
+        ++this.connectionTimes;
     }
 
     _onopen() {
@@ -98,10 +112,8 @@ class BaseApiClient
         this._log('connection established with ', this.url);
     }
 
-    _sendAllPending()
-    {
-        for (let value of this.pendingSend)
-        {
+    _sendAllPending() {
+        for (let value of this.pendingSend) {
             value();
         }
         this.pendingSend = [];
@@ -122,16 +134,13 @@ class BaseApiClient
     _parseResponse(data) {
         const response = JSON.parse(data);
         const requestId = response['request_id'];
-        if (requestId in this.requestMapping)
-        {
+        if (requestId in this.requestMapping) {
             const payload = JSON.parse(response['payload']);
             const handlers = this.requestMapping[requestId];
-            if (Boolean(payload['success']))
-            {
+            if (Boolean(payload['success'])) {
                 handlers.resolve(payload['result']);
             }
-            else
-            {
+            else {
                 handlers.reject(new Error('' + payload['error']));
             }
             delete handlers[requestId];
@@ -139,8 +148,7 @@ class BaseApiClient
     }
 
     _rejectAll(message) {
-        for (let handlers of Object.values(this.requestMapping))
-        {
+        for (let handlers of Object.values(this.requestMapping)) {
             handlers.reject(new Error(message));
         }
         this.requestMapping = {};
@@ -162,18 +170,20 @@ class BaseApiClient
         this.isOpen = false;
         const status = event.wasClean ? 'closed' : 'aborted';
         this._log('connection ' + status + ', event: ', event);
+        setTimeout(() => {
+            this._createConnection();
+            this.connectionUpdatedHandler && this.connectionUpdatedHandler();
+        }, RECONNECTION_TIMEOUT);
     }
 
     _log(...args) {
-        if (this.verbose)
-        {
+        if (this.verbose) {
             console.log(...args);
         }
     }
 }
 
-class HubApiClient extends BaseApiClient
-{
+class HubApiClient extends BaseApiClient {
     /**
      * Creates admin client to control Hub.
      * @param {!Config} config
@@ -199,7 +209,7 @@ class HubApiClient extends BaseApiClient
 
     /**
      * Checks if instance on given port exists, run a new one if doesn't.
-     * @param {String} port 
+     * @param {String} port
      * @returns {Promise<InstanceApiClient>}
      */
     get(port) {
@@ -208,11 +218,12 @@ class HubApiClient extends BaseApiClient
 
     /**
      * Stops key-value storage instance.
-     * @param {String} suffix 
+     * @param {String} suffix
      */
     stop(suffix) {
         const url = this.config.getInstanceUrl(suffix);
-        return this.sendRequest('REMOVE', url).then(() => {});
+        return this.sendRequest('REMOVE', url).then(() => {
+        });
     }
 
     /**
@@ -228,8 +239,7 @@ class HubApiClient extends BaseApiClient
     }
 }
 
-class InstanceApiClient extends BaseApiClient
-{
+class InstanceApiClient extends BaseApiClient {
     /**
      * Creates instance client which provides key-value storage.
      * @param {!Config} config
@@ -254,16 +264,17 @@ class InstanceApiClient extends BaseApiClient
 
     /**
      * Puts key/value pair to storage
-     * @param {string} key 
-     * @param {string} value 
+     * @param {string} key
+     * @param {string} value
      */
     set(key, value) {
-        return this.sendRequest('SET', key, value).then(() => {});
+        return this.sendRequest('SET', key, value).then(() => {
+        });
     }
 
     /**
      * Reads stored value for given.
-     * @param {string} key 
+     * @param {string} key
      */
     get(key) {
         return this.sendRequest('GET', key).then((value) => {
@@ -277,9 +288,10 @@ class InstanceApiClient extends BaseApiClient
 
     /**
      * Removes value for given key.
-     * @param {string} key 
+     * @param {string} key
      */
     remove(key) {
-        return this.sendRequest('REMOVE', key).then(() => {});
+        return this.sendRequest('REMOVE', key).then(() => {
+        });
     }
 }

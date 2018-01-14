@@ -6,17 +6,9 @@ class Editor {
      */
     constructor(client) {
         this.client = client;
-        this.showContent();
         this.connectButtons();
+        this.client.addConnectionUpdatedHandler(this.updateTable.bind(this));
         this.updateTable();
-    }
-
-    showContent() {
-        hideLoadSpinner();
-
-        let grid = document.querySelector('#editor-content-grid');
-        grid.style.visibility = 'visible';
-        grid.style.display = 'block';
     }
 
     connectButtons() {
@@ -93,10 +85,19 @@ function getInstanceApiClient() {
     return hub.get('8375');
 }
 
+function showContent() {
+    hideLoadSpinner();
+
+    let grid = document.querySelector('#editor-content-grid');
+    grid.style.visibility = 'visible';
+    grid.style.display = 'block';
+}
+
 async function runEditor() {
     try
     {
         let client = await getInstanceApiClient();
+        showContent();
         window.editor = new Editor(client);
     }
     catch (err)
