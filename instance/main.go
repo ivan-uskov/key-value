@@ -9,8 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
-	"os"
-	"golang.org/x/tools/cmd/bundle/testdata/src/initial"
 )
 
 func createSetter(s Storage) routers.RequestStrategy {
