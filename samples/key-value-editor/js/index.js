@@ -2,7 +2,7 @@
 class Editor {
     /**
      * Creates editor, shows editor UI on HTML page.
-     * @param {InstanceApiCliet} client 
+     * @param {InstanceApiClient} client
      */
     constructor(client) {
         this.client = client;

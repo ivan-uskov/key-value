@@ -22,11 +22,11 @@ var (
 )
 
 type request struct {
-	RequestId int64
-	Payload string
+	RequestId int64 `json:"request_id"`
+	Payload string `json:"payload"`
 }
 
 type response struct {
-	RequestId int64
-	Payload string
+	RequestId int64 `json:"request_id"`
+	Payload string `json:"payload"`
 }

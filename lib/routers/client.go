@@ -3,6 +3,7 @@ package routers
 import (
 	"key-value/lib/ws"
 	"encoding/json"
+	"fmt"
 )
 
 type client struct {
@@ -10,8 +11,7 @@ type client struct {
 }
 
 type Client interface {
-	Send(r Request) (<-chan string, error)
-	SendSync(r Request) (string, error)
+	SendSync(r Request) (*Response, error)
 	Close()
 }
 
@@ -28,20 +28,23 @@ func (c * client) Close() {
 	c.con.Close()
 }
 
-func (c *client) Send(r Request) (<-chan string, error) {
+func (c *client) SendSync(r Request) (*Response, error) {
 	messageData, err := json.Marshal(r)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.con.Send(string(messageData))
-}
-
-func (c *client) SendSync(r Request) (string, error) {
-	messageData, err := json.Marshal(r)
+	respStr, err := c.con.SendSync(string(messageData))
 	if err != nil {
-		return ``, err
+		fmt.Println(err)
+		return nil, err
 	}
 
-	return c.con.SendSync(string(messageData))
+	resp := Response{}
+	err = json.Unmarshal([]byte(respStr), &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }

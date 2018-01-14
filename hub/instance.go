@@ -16,13 +16,13 @@ type Instance interface {
 
 type instance struct {
 	address string
-	worker processes.Worker
-	ws routers.Client
+	worker  processes.Worker
+	ws      routers.Client
 }
 
 func (i *instance) Ping() bool {
-	resp, err := i.ws.SendSync(routers.Request{Action:routers.PING})
-	return err != nil || resp != `1`
+	resp, err := i.ws.SendSync(routers.Request{Action: routers.PING})
+	return err == nil && resp.Success
 }
 
 func (i *instance) Kill() {
@@ -41,16 +41,18 @@ func NewInstance(address string) (Instance, error) {
 		return nil, err
 	}
 
-	c , err := routers.NewClient(address, `ws`)
+	c, err := routers.NewClient(address, `ws`)
 	if err != nil {
 		worker.Kill()
 		return nil, err
 	}
 
-	resp, err := c.SendSync(routers.Request{Action:routers.PING})
-	if err != nil || resp != `1`{
+	resp, err := c.SendSync(routers.Request{Action: routers.PING})
+	if err != nil {
 		worker.Kill()
 		return nil, err
+	} else if !resp.Success {
+		return nil, fmt.Errorf(resp.Error)
 	}
 
 	return &instance{address, worker, c}, nil

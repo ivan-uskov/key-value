@@ -109,30 +109,30 @@ class BaseApiClient
 
     _sendRequestBySocket(requestId, action, option1 = '', option2 = '') {
         let myObj = {
-            'Payload': JSON.stringify({
-                'Action': '' + action,
-                'Option1': '' + option1,
-                'Option2': '' + option2
+            'payload': JSON.stringify({
+                'action': '' + action,
+                'option_1': '' + option1,
+                'option_2': '' + option2
             }),
-            'RequestId': requestId
+            'request_id': requestId
         };
         this.socket.send(JSON.stringify(myObj));
     }
 
     _parseResponse(data) {
         const response = JSON.parse(data);
-        const requestId = response.RequestId;
+        const requestId = response['request_id'];
         if (requestId in this.requestMapping)
         {
-            const payload = JSON.parse(response.Payload);
+            const payload = JSON.parse(response['payload']);
             const handlers = this.requestMapping[requestId];
-            if (Boolean(payload.Success))
+            if (Boolean(payload['success']))
             {
-                handlers.resolve(payload.Result);
+                handlers.resolve(payload['result']);
             }
             else
             {
-                handlers.reject(new Error('' + payload.Error));            
+                handlers.reject(new Error('' + payload['error']));
             }
             delete handlers[requestId];
         }
@@ -203,25 +203,7 @@ class HubApiClient extends BaseApiClient
      * @returns {Promise<InstanceApiClient>}
      */
     get(port) {
-        let instanceConfig = new Config(this.config.host, port, this.config.isVerbose());
-        return this.list().then((addressList) => {
-            if (addressList.indexOf(instanceConfig.getAddress()) >= 0) {
-                return new InstanceApiClient(instanceConfig);
-            }
-            return this.run(port);
-        });
-    }
-
-    /**
-     * Runs new key-value storage instance on URL with given suffix.
-     * @param {String} port 
-     * @returns {Promise<InstanceApiClient>}
-     */
-    run(port) {
-        let instanceConfig = new Config(this.config.host, port, this.config.isVerbose());
-        return this.sendRequest('SET', instanceConfig.getAddress()).then(() => {
-            return new InstanceApiClient(instanceConfig);
-        });
+        return this._run(port);
     }
 
     /**
@@ -231,6 +213,18 @@ class HubApiClient extends BaseApiClient
     stop(suffix) {
         const url = this.config.getInstanceUrl(suffix);
         return this.sendRequest('REMOVE', url).then(() => {});
+    }
+
+    /**
+     * Runs new key-value storage instance on URL with given suffix.
+     * @param {String} port
+     * @returns {Promise<InstanceApiClient>}
+     */
+    _run(port) {
+        let instanceConfig = new Config(this.config.host, port, this.config.isVerbose());
+        return this.sendRequest('RUN', instanceConfig.getAddress()).then(() => {
+            return new InstanceApiClient(instanceConfig);
+        });
     }
 }
 

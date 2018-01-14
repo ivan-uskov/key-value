@@ -77,7 +77,7 @@ func main() {
 	router.AddRoute(routers.LIST, createLister(storage))
 	router.AddRoute(routers.REMOVE, createRemover(storage))
 	router.AddRoute(routers.PING, func(r routers.Request) (string, error) {
-		return `1`, nil
+		return ``, nil
 	})
 
 	server := ws.NewServer()

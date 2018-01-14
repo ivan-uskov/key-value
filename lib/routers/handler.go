@@ -8,14 +8,14 @@ import (
 )
 
 func createRequestHandler(strategy RequestStrategy) requestHandler {
-	return func (request Request) response {
+	return func (request Request) Response {
 		value, err := strategy(request)
 		errorMsg := ``
 		if err != nil {
 			errorMsg = err.Error()
 		}
 
-		return response{
+		return Response{
 			Success:   err == nil,
 			Error:     errorMsg,
 			Result:    value,

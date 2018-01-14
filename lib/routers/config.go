@@ -10,16 +10,16 @@ const (
 )
 
 type Request struct {
-	Action  string
-	Option1 string
-	Option2 string
+	Action  string `json:"action"`
+	Option1 string `json:"option_1"`
+	Option2 string `json:"option_2"`
 }
 
-type response struct {
-	Success bool
-	Error   string
-	Result  string
+type Response struct {
+	Success bool `json:"success"`
+	Error   string `json:"error"`
+	Result  string `json:"result"`
 }
 
-type requestHandler func(request Request) response
+type requestHandler func(request Request) Response
 type RequestStrategy func(r Request) (string, error)
