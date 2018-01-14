@@ -50,7 +50,6 @@ func createRemover(reg Storage) routers.RequestStrategy {
 	}
 }
 
-
 var addr = flag.String("addr", ":8080", "http service address")
 
 const dataPath = "storage.data"

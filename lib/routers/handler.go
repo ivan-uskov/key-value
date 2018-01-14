@@ -8,7 +8,7 @@ import (
 )
 
 func createRequestHandler(strategy RequestStrategy) requestHandler {
-	return func (request Request) Response {
+	return func(request Request) Response {
 		value, err := strategy(request)
 		errorMsg := ``
 		if err != nil {
@@ -16,9 +16,9 @@ func createRequestHandler(strategy RequestStrategy) requestHandler {
 		}
 
 		return Response{
-			Success:   err == nil,
-			Error:     errorMsg,
-			Result:    value,
+			Success: err == nil,
+			Error:   errorMsg,
+			Result:  value,
 		}
 	}
 }

@@ -11,7 +11,7 @@ import (
 
 type ClientConnection interface {
 	Send(msg string) (<-chan string, error)
-	SendSync(msg string) (string, error)
+	SendSync(msg string, timeout time.Duration) (string, error)
 	Close()
 }
 
@@ -59,7 +59,7 @@ func (c *clientConnection) Close() {
 	c.ws.Close()
 }
 
-const TIMEOUT  = 2
+const TIMEOUT  = 60
 
 func (c *clientConnection) Send(msg string) (<-chan string, error) {
 	c.requestId++
@@ -84,14 +84,14 @@ func (c *clientConnection) Send(msg string) (<-chan string, error) {
 	return resultChan, nil
 }
 
-func (c *clientConnection) SendSync(msg string) (string, error) {
+func (c *clientConnection) SendSync(msg string, timeout time.Duration) (string, error) {
 	mc, err := c.Send(msg)
 	if err != nil {
 		return "", err
 	}
 
 	select {
-	case <-time.After(TIMEOUT * time.Second):
+	case <-time.After(timeout):
 		return ``, errors.New("timeout")
 	case result := <-mc:
 		return result, nil

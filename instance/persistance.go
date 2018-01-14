@@ -12,7 +12,7 @@ type setter func(string, string)
 
 type Persister struct {
 	filePath string
-	lister dataProvider
+	lister   dataProvider
 }
 
 func NewPersister(filePath string, lister dataProvider) *Persister {

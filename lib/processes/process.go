@@ -9,7 +9,7 @@ type Worker interface {
 }
 
 type worker struct {
-	killWorkersChan      chan bool
+	killWorkersChan chan bool
 }
 
 func (w *worker) Kill() {
@@ -44,7 +44,7 @@ func Run(cmd string, args []string) (Worker, error) {
 		}
 
 		successChan <- true
-	} ()
+	}()
 
 	return w, <-errChan
 }

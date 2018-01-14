@@ -3,7 +3,7 @@ package routers
 import (
 	"key-value/lib/ws"
 	"encoding/json"
-	"fmt"
+	"time"
 )
 
 type client struct {
@@ -24,7 +24,7 @@ func NewClient(address string, path string) (Client, error) {
 	return &client{con}, nil
 }
 
-func (c * client) Close() {
+func (c *client) Close() {
 	c.con.Close()
 }
 
@@ -34,9 +34,8 @@ func (c *client) SendSync(r Request) (*Response, error) {
 		return nil, err
 	}
 
-	respStr, err := c.con.SendSync(string(messageData))
+	respStr, err := c.con.SendSync(string(messageData), 1*time.Second)
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 

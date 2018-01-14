@@ -4,14 +4,14 @@ type SetHandler func(key string, val string, ver int64)
 type RemoveHandler func(key string, ver int64)
 
 type storage struct {
-	data ConcurrentMap
-	setHandler SetHandler
+	data          ConcurrentMap
+	setHandler    SetHandler
 	removeHandler RemoveHandler
 }
 
 type record struct {
 	value string
-	ver int64
+	ver   int64
 }
 
 type Storage interface {
@@ -26,8 +26,8 @@ type Storage interface {
 
 func New() Storage {
 	return &storage{
-		data: NewConcurrentMap(),
-		setHandler: nil,
+		data:          NewConcurrentMap(),
+		setHandler:    nil,
 		removeHandler: nil,
 	}
 }
@@ -36,7 +36,7 @@ func (s *storage) AddSetHandler(sh SetHandler) {
 	s.setHandler = sh
 }
 
-func (s *storage) AddRemoveHandler(rh RemoveHandler)  {
+func (s *storage) AddRemoveHandler(rh RemoveHandler) {
 	s.removeHandler = rh
 }
 
@@ -81,7 +81,7 @@ func (s *storage) Get(key string) (string, bool) {
 func (s *storage) Remove(key string) bool {
 	value, ok := s.data.Pop(key)
 	if ok && s.removeHandler != nil {
-		go s.removeHandler(key, value.(record).ver + 1)
+		go s.removeHandler(key, value.(record).ver+1)
 	}
 	return ok
 }
