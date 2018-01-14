@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"fmt"
+	"key-value/lib/routers"
 )
 
 type Instance interface {
@@ -16,10 +17,12 @@ type Instance interface {
 type instance struct {
 	address string
 	worker processes.Worker
+	ws routers.Client
 }
 
 func (i *instance) Ping() bool {
-	return true
+	resp, err := i.ws.SendSync(routers.Request{Action:routers.PING})
+	return err != nil || resp != `1`
 }
 
 func (i *instance) Kill() {
@@ -32,13 +35,25 @@ func NewInstance(address string) (Instance, error) {
 		return nil, err
 	}
 
-	args := []string{fmt.Sprintf(`--addr=%s`, r.Option1)}
+	args := []string{fmt.Sprintf(`--addr=%s`, address)}
 	worker, err := processes.Run(instancePath, args)
 	if err != nil {
 		return nil, err
 	}
 
-	return &instance{address, worker}, nil
+	c , err := routers.NewClient(address, `ws`)
+	if err != nil {
+		worker.Kill()
+		return nil, err
+	}
+
+	resp, err := c.SendSync(routers.Request{Action:routers.PING})
+	if err != nil || resp != `1`{
+		worker.Kill()
+		return nil, err
+	}
+
+	return &instance{address, worker, c}, nil
 }
 
 func getInstanceExecutablePath() (string, error) {

@@ -6,19 +6,20 @@ const (
 	LIST   = `LIST`
 	REMOVE = `REMOVE`
 	PING   = `PING`
+	RUN    = `RUN`
 )
 
 type Request struct {
-	Action string
+	Action  string
 	Option1 string
 	Option2 string
 }
 
 type response struct {
 	Success bool
-	Error string
-	Result string
+	Error   string
+	Result  string
 }
 
-type requestHandler func (request Request) response
+type requestHandler func(request Request) response
 type RequestStrategy func(r Request) (string, error)

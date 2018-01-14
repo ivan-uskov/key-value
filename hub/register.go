@@ -1,12 +1,11 @@
 package main
 
 import (
-	cm "github.com/orcaman/concurrent-map"
-	"key-value/lib/processes"
+	"sync"
 )
 
 type registerStructure struct {
-	data cm.ConcurrentMap
+	data sync.Map
 }
 
 type Register interface {
@@ -19,12 +18,12 @@ type Register interface {
 
 func NewRegister() Register {
 	return &registerStructure{
-		data: cm.New(),
+		data: sync.Map{},
 	}
 }
 
 func (s *registerStructure) Get(key string) (Instance, bool) {
-	data, ok := s.data.Get(key)
+	data, ok := s.data.Load(key)
 	if ok {
 		return data.(Instance), ok
 	} else {
@@ -33,22 +32,24 @@ func (s *registerStructure) Get(key string) (Instance, bool) {
 }
 
 func (s *registerStructure) Exists(address string) bool {
-	return s.data.Has(address)
+	_, ok := s.data.Load(address)
+	return ok
 }
 
 func (s *registerStructure) Add(address string, i Instance) {
-	s.data.Set(address, i)
+	s.data.Store(address, i)
 }
 
 func (s *registerStructure) Remove(key string) bool {
-	_, ok := s.data.Pop(key)
+	_, ok := s.data.Load(key)
 	return ok
 }
 
 func (s *registerStructure) List() map[string]Instance {
 	result := make(map[string]Instance)
-	for key, value := range s.data.Items() {
-		result[key] = value.(Instance)
-	}
+	s.data.Range(func(k, v interface{}) bool {
+		result[k.(string)] = v.(Instance)
+		return true
+	})
 	return result
 }

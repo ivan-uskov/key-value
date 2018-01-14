@@ -5,35 +5,29 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"key-value/lib/processes"
 	"key-value/lib/routers"
 	"key-value/lib/ws"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
-	"runtime"
 )
 
 var addr = flag.String("addr", ":8372", "http service address")
 
-func createSetter(reg Register) routers.RequestStrategy {
+func createRunner(reg Register) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
-		if reg.Exists(r.Option1) {
-			i, ok := reg.Get(r.Option1)
-			if ok {
-				if i.Ping() {
-
-				} else {
-
-				}
+		i, ok := reg.Get(r.Option1)
+		if ok {
+			if i.Ping() {
+				return ``, nil
+			} else {
+				i.Kill()
+				reg.Remove(r.Option1)
 			}
-			return ``, errors.New(`Instance already started`)
 		}
 
 		i, err := NewInstance(r.Option1)
 		if err != nil {
-			return "", err
+			return ``, err
 		}
 		reg.Add(r.Option1, i)
 
@@ -80,7 +74,7 @@ func main() {
 	register := NewRegister()
 	server := ws.NewServer()
 	router := routers.NewRouter()
-	router.AddRoute(routers.SET, createSetter(register))
+	router.AddRoute(routers.RUN, createRunner(register))
 	router.AddRoute(routers.LIST, createLister(register))
 	router.AddRoute(routers.REMOVE, createRemover(register))
 
