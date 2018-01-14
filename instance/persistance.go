@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"os"
 	"fmt"
+	"sync"
 )
 
 type dataProvider func() map[string]string
@@ -13,10 +14,11 @@ type setter func(string, string)
 type Persister struct {
 	filePath string
 	lister   dataProvider
+	sync.Mutex
 }
 
 func NewPersister(filePath string, lister dataProvider) *Persister {
-	return &Persister{filePath, lister}
+	return &Persister{filePath, lister, sync.Mutex{}}
 }
 
 func (p *Persister) Load(s setter) {
@@ -38,16 +40,18 @@ func (p *Persister) Load(s setter) {
 	}
 }
 
-func (p *Persister) Run(delay time.Duration) {
+func (p *Persister) RunSaveLoop(delay time.Duration) {
 	go func() {
 		for {
 			time.Sleep(delay)
-			p.persists()
+			p.Persists()
 		}
 	}()
 }
 
-func (p *Persister) persists() {
+func (p *Persister) Persists() {
+	p.Lock()
+	defer p.Unlock()
 	f, err := os.Create(p.filePath)
 	if err != nil {
 		fmt.Println(err)
