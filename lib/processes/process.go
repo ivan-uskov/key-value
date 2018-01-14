@@ -6,23 +6,31 @@ import (
 
 type Worker interface {
 	Kill()
+	GetStopChan() chan bool
 }
 
 type worker struct {
 	killWorkersChan chan bool
+	killWaitChan    chan bool
+	stopChan        chan bool
 }
 
 func (w *worker) Kill() {
 	w.killWorkersChan <- true
+	<-w.killWaitChan
+}
+
+func (w *worker) GetStopChan() chan bool {
+	return w.stopChan
 }
 
 func Run(cmd string, args []string) (Worker, error) {
-	w := &worker{make(chan bool, 1)}
+	w := &worker{make(chan bool, 1), make(chan bool, 1), make(chan bool, 1)}
 
-	errChan := make(chan error)
+	errChan := make(chan error, 1)
 	go func() {
 		command := exec.Command(cmd, args...)
-		successChan := make(chan bool)
+		waitChan := make(chan error)
 		err := command.Start()
 		errChan <- err
 		if err != nil {
@@ -33,17 +41,13 @@ func Run(cmd string, args []string) (Worker, error) {
 			select {
 			case <-w.killWorkersChan:
 				command.Process.Kill()
-			case <-successChan:
+			case err := <-waitChan:
+				w.stopChan <- err == nil
+				w.killWaitChan <- true
 			}
 		}()
 
-		err = command.Wait()
-
-		if err != nil {
-			successChan <- false
-		}
-
-		successChan <- true
+		waitChan <- command.Wait()
 	}()
 
 	return w, <-errChan
