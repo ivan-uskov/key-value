@@ -26,6 +26,7 @@ func (i *instance) Ping() bool {
 }
 
 func (i *instance) Kill() {
+	i.ws.Close()
 	i.worker.Kill()
 }
 

@@ -6,14 +6,22 @@ import (
 
 type registerStructure struct {
 	data sync.Map
+	sync.RWMutex
+}
+
+type RWLocker interface {
+	sync.Locker
+	RLock()
+	RUnlock()
 }
 
 type Register interface {
 	Add(address string, i Instance)
 	Exists(address string) bool
-	Remove(key string) bool
+	Remove(key string)
 	Get(key string) (Instance, bool)
 	List() map[string]Instance
+	RWLocker
 }
 
 func NewRegister() Register {
@@ -40,9 +48,8 @@ func (s *registerStructure) Add(address string, i Instance) {
 	s.data.Store(address, i)
 }
 
-func (s *registerStructure) Remove(key string) bool {
-	_, ok := s.data.Load(key)
-	return ok
+func (s *registerStructure) Remove(key string) {
+	s.data.Delete(key)
 }
 
 func (s *registerStructure) List() map[string]Instance {

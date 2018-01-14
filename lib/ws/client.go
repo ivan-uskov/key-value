@@ -2,11 +2,11 @@ package ws
 
 import (
 	"net/url"
-	"log"
 	"github.com/gorilla/websocket"
 	"encoding/json"
 	"time"
 	"errors"
+	"sync"
 )
 
 type ClientConnection interface {
@@ -17,49 +17,49 @@ type ClientConnection interface {
 
 type clientConnection struct {
 	requestId int64
-	queries   map[int64]chan string
+	queries   sync.Map
 	ws        *websocket.Conn
-	done      chan struct{}
+	done      chan bool
 }
 
 func (c *clientConnection) handleResponse(res *response) {
-	resChan, ok := c.queries[res.RequestId]
+	resChan, ok := c.queries.Load(res.RequestId)
 	if ok {
-		resChan <- res.Payload
-		delete(c.queries, res.RequestId)
-	} else {
-		log.Println(`request not found `, res.RequestId)
+		resChan.(chan string) <- res.Payload
+		c.queries.Delete(res.RequestId)
 	}
 }
 
 func (c *clientConnection) runReader() {
-	defer c.ws.Close()
-	defer close(c.done)
-	for {
-		_, message, err := c.ws.ReadMessage()
-		if err != nil {
-			log.Println("read:", err)
-			return
-		}
-		response := response{}
-		err = json.Unmarshal(message, &response)
-		if err != nil {
-			log.Println("unmarshall:", err)
-			return
-		}
-
-		c.handleResponse(&response)
-		select {
-			case<- c.done:
+	go func() {
+		for {
+			_, message, err := c.ws.ReadMessage()
+			if err != nil {
 				return
+			}
+			resp := response{}
+			err = json.Unmarshal(message, &resp)
+			if err != nil {
+				return
+			}
+
+			c.handleResponse(&resp)
+			select {
+			case <-c.done:
+				return
+			default:
+				continue
+			}
 		}
-	}
+	}()
 }
 
 func (c *clientConnection) Close() {
-	c.done <- struct{}{}
+	c.done <- true
 	c.ws.Close()
 }
+
+const TIMEOUT  = 2
 
 func (c *clientConnection) Send(msg string) (<-chan string, error) {
 	c.requestId++
@@ -72,18 +72,13 @@ func (c *clientConnection) Send(msg string) (<-chan string, error) {
 		return nil, err
 	}
 
-	timeout := time.Duration(10)
-	resultChan := make(chan string)
+	resultChan := make(chan string, 1)
 	c.ws.WriteMessage(websocket.TextMessage, message)
-	c.queries[req.RequestId] = resultChan
+	c.queries.Store(req.RequestId, resultChan)
 	go func() {
 		select {
-		case <-time.After(time.Second * timeout):
-			_, ok := c.queries[req.RequestId]
-			if ok {
-				log.Println("Request closed by timeout: ", req.RequestId)
-				delete(c.queries, req.RequestId)
-			}
+		case <-time.After(time.Second * TIMEOUT):
+			c.queries.Delete(req.RequestId)
 		}
 	}()
 	return resultChan, nil
@@ -96,7 +91,7 @@ func (c *clientConnection) SendSync(msg string) (string, error) {
 	}
 
 	select {
-	case <-time.After(10 * time.Second):
+	case <-time.After(TIMEOUT * time.Second):
 		return ``, errors.New("timeout")
 	case result := <-mc:
 		return result, nil
@@ -112,11 +107,11 @@ func NewClient(address string, path string) (ClientConnection, error) {
 
 	con := &clientConnection{
 		requestId: 0,
-		queries:   make(map[int64]chan string),
+		queries:   sync.Map{},
 		ws:        rawConnection,
-		done:      make(chan struct{}),
+		done:      make(chan bool, 1),
 	}
 
-	go con.runReader()
+	con.runReader()
 	return con, nil
 }

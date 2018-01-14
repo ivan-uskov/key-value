@@ -17,7 +17,7 @@ func (w *worker) Kill() {
 }
 
 func Run(cmd string, args []string) (Worker, error) {
-	w := &worker{make(chan bool)}
+	w := &worker{make(chan bool, 1)}
 
 	errChan := make(chan error)
 	go func() {

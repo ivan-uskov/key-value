@@ -11,15 +11,16 @@ import (
 	"net/http"
 )
 
-var addr = flag.String("addr", ":8372", "http service address")
-
 func createRunner(reg Register) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
+		reg.Lock()
+		defer reg.Unlock()
 		i, ok := reg.Get(r.Option1)
 		if ok {
 			if i.Ping() {
 				return ``, nil
 			} else {
+				fmt.Printf("Kill instance on %s\n", r.Option1)
 				i.Kill()
 				reg.Remove(r.Option1)
 			}
@@ -30,6 +31,7 @@ func createRunner(reg Register) routers.RequestStrategy {
 			return ``, err
 		}
 		reg.Add(r.Option1, i)
+		fmt.Printf("Run new instance on %s\n", r.Option1)
 
 		return ``, nil
 	}
@@ -37,6 +39,9 @@ func createRunner(reg Register) routers.RequestStrategy {
 
 func createLister(reg Register) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
+		reg.RLock()
+		defer reg.RUnlock()
+
 		items := reg.List()
 		result := make([]string, 0, len(items))
 		for address := range items {
@@ -54,19 +59,21 @@ func createLister(reg Register) routers.RequestStrategy {
 
 func createRemover(reg Register) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
+		reg.Lock()
+		defer reg.Unlock()
 		i, ok := reg.Get(r.Option1)
 		if !ok {
 			return ``, errors.New(`item not exists`)
 		}
 
 		i.Kill()
-		if !reg.Remove(r.Option1) {
-			return ``, errors.New(`remove error`)
-		}
+		reg.Remove(r.Option1)
 
 		return ``, nil
 	}
 }
+
+var addr = flag.String("addr", ":8372", "http service address")
 
 func main() {
 	flag.Parse()
