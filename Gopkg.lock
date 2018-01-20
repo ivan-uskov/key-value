@@ -7,15 +7,9 @@
   revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
   version = "v1.2.0"
 
-[[projects]]
-  branch = "release-branch.go1.6"
-  name = "golang.org/x/tools"
-  packages = ["cmd/bundle/testdata/src/initial"]
-  revision = "c887be1b2ebd11663d4bf2fbca508c449172339e"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bacbb5242ff40acb6c7b8576984bcc4b5ab55b633c920badd5f61563f5e7fde6"
+  inputs-digest = "941e8dbe52e16e8a7dff4068b7ba53ae69a5748b29fbf2bcb5df3a063ac52261"
   solver-name = "gps-cdcl"
   solver-version = 1
