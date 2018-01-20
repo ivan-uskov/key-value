@@ -38,12 +38,15 @@ func Run(cmd string, args []string) (Worker, error) {
 		}
 
 		go func() {
-			select {
-			case <-w.killWorkersChan:
-				command.Process.Kill()
-			case err := <-waitChan:
-				w.stopChan <- err == nil
-				w.killWaitChan <- true
+			for {
+				select {
+				case <-w.killWorkersChan:
+					command.Process.Kill()
+				case err := <-waitChan:
+					w.stopChan <- err == nil
+					w.killWaitChan <- true
+					break
+				}
 			}
 		}()
 
