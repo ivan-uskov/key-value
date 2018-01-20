@@ -13,16 +13,17 @@ import (
 	"os/signal"
 	"syscall"
 	"regexp"
+	"key-value/instance/storages"
 )
 
-func createSetter(s Storage) routers.RequestStrategy {
+func createSetter(s storages.Storage) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
 		s.Set(r.Option1, r.Option2)
 		return ``, nil
 	}
 }
 
-func createGetter(storage Storage) routers.RequestStrategy {
+func createGetter(storage storages.Storage) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
 		v, ok := storage.Get(r.Option1)
 		if !ok {
@@ -33,7 +34,7 @@ func createGetter(storage Storage) routers.RequestStrategy {
 	}
 }
 
-func createLister(reg Storage) routers.RequestStrategy {
+func createLister(reg storages.Storage) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
 		res, err := json.Marshal(reg.List())
 		if err != nil {
@@ -44,7 +45,7 @@ func createLister(reg Storage) routers.RequestStrategy {
 	}
 }
 
-func createRemover(reg Storage) routers.RequestStrategy {
+func createRemover(reg storages.Storage) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
 		if !reg.Remove(r.Option1) {
 			return ``, errors.New(`Not exists`)
@@ -71,7 +72,7 @@ func onShutDown(h func()) {
 	}()
 }
 
-func createRouter(storage Storage) routers.Router {
+func createRouter(storage storages.Storage) routers.Router {
 	r := routers.NewRouter()
 	r.AddRoute(routers.GET, createGetter(storage))
 	r.AddRoute(routers.SET, createSetter(storage))
@@ -87,7 +88,7 @@ func createRouter(storage Storage) routers.Router {
 func main() {
 	flag.Parse()
 
-	storage := New()
+	storage := storages.New()
 	storage.AddSetHandler(func(key string, val string, ver int64) {
 		log.Printf("Set %s : %s : %d", key, val, ver)
 	})

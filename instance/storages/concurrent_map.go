@@ -1,25 +1,25 @@
-package main
+package storages
 
 import "sync"
 
-var SHARD_COUNT = 32
+const ShardCount = 32
 
 type ConcurrentMap []*ConcurrentMapShared
 type ConcurrentMapShared struct {
 	items map[string]interface{}
-	sync.RWMutex // Read Write mutex, guards access to internal map.
+	sync.RWMutex
 }
 
 func NewConcurrentMap() ConcurrentMap {
-	m := make(ConcurrentMap, SHARD_COUNT)
-	for i := 0; i < SHARD_COUNT; i++ {
+	m := make(ConcurrentMap, ShardCount)
+	for i := 0; i < ShardCount; i++ {
 		m[i] = &ConcurrentMapShared{items: make(map[string]interface{})}
 	}
 	return m
 }
 
 func (m ConcurrentMap) getShard(key string) *ConcurrentMapShared {
-	return m[uint(fnv32(key))%uint(SHARD_COUNT)]
+	return m[uint(fnv32(key))%uint(ShardCount)]
 }
 
 func (m ConcurrentMap) Get(key string, updater func(interface{}) interface{}) (interface{}, bool) {
@@ -88,9 +88,9 @@ func (m ConcurrentMap) IterBuffered() <-chan Tuple {
 }
 
 func snapshot(m ConcurrentMap) (chans []chan Tuple) {
-	chans = make([]chan Tuple, SHARD_COUNT)
+	chans = make([]chan Tuple, ShardCount)
 	wg := sync.WaitGroup{}
-	wg.Add(SHARD_COUNT)
+	wg.Add(ShardCount)
 	for index, shard := range m {
 		go func(index int, shard *ConcurrentMapShared) {
 			shard.RLock()

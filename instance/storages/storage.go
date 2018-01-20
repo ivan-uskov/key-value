@@ -1,4 +1,4 @@
-package main
+package storages
 
 type SetHandler func(key string, val string, ver int64)
 type RemoveHandler func(key string, ver int64)
@@ -12,6 +12,11 @@ type storage struct {
 type record struct {
 	value string
 	ver   int64
+}
+
+type DataHandler interface {
+	HandleRemoved(key string, version int64)
+	HandleUpdated(key string, value string, version int64)
 }
 
 type Storage interface {
