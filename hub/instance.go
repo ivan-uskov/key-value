@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"key-value/lib/routers"
 	"sync"
+	"time"
 )
 
 type Instance interface {
@@ -81,6 +82,7 @@ func (i *instance) start() error {
 		return err
 	}
 
+	time.Sleep(50 * time.Millisecond)
 	i.ws, err = routers.NewClient(i.address, `ws`)
 	if err != nil {
 		i.worker.Kill()
