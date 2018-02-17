@@ -1,8 +1,9 @@
 
 .editor-card-add-form
 {
-    float: right;
+    float: left;
     padding: 10px;
+    margin: 10px;
 }
 
 #editor-load-spinner
@@ -21,4 +22,9 @@
 {
     visibility: hidden;
     display: none;
+}
+
+.clear
+{
+    clear: both;
 }

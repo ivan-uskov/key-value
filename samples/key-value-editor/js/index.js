@@ -6,16 +6,28 @@ class Editor {
      */
     constructor(client) {
         this.client = client;
+        this.initializeEditor();
         this.connectButtons();
         this.client.addConnectionUpdatedHandler(this.updateTable.bind(this));
         this.updateTable();
+
+        setInterval(this.updateTable.bind(this), 1000);
+    }
+
+    initializeEditor() {
+        let rowTemplate = document.querySelector('#instance_values');
+        let row = document.importNode(rowTemplate.content, true);
+        let container = document.querySelector('#editor-content-grid');
+        container.prepend(row);
+        this.head = container.firstElementChild;
+        this.head.querySelector('.main_title').innerHTML = this.client.getConfig().getKeyValueApiUrl();
     }
 
     connectButtons() {
-        let addButton = document.getElementById('editor-add-form-add');
-        let removeButton = document.getElementById('editor-add-form-remove');
-        let keyInput = document.getElementById('editor-add-form-key');
-        let valueInput = document.getElementById('editor-add-form-value');
+        let addButton = this.head.querySelector('.editor-add-form-add');
+        let removeButton = this.head.querySelector('.editor-add-form-remove');
+        let keyInput = this.head.querySelector('.editor-add-form-key');
+        let valueInput = this.head.querySelector('.editor-add-form-value');
         addButton.addEventListener('click', () => {
             let key = keyInput.value;
             let value = valueInput.value;
@@ -45,7 +57,7 @@ class Editor {
 
     async updateTable() {
         // Query table nodes
-        let table = document.querySelector('#editor-key-value-table');
+        let table = this.head.querySelector('.editor-key-value-table');
         let tbody = table.querySelector("tbody");
 
         // Query template nodes
@@ -79,12 +91,6 @@ function hideLoadSpinner()
     spinner.style.display = 'none';
 }
 
-function getInstanceApiClient() {
-    let config = new Config('localhost', '8372', true);
-    let hub = new HubApiClient(config);
-    return hub.get('8375');
-}
-
 function showContent() {
     hideLoadSpinner();
 
@@ -96,9 +102,16 @@ function showContent() {
 async function runEditor() {
     try
     {
-        let client = await getInstanceApiClient();
+        let config = new Config('localhost', '8372', true);
+        let hub = new HubApiClient(config);
+        let client1 = await hub.get('8375');
+        window.editor1 = new Editor(client1);
+        let client2 = await hub.get('8376');
+        window.editor2 = new Editor(client2);
+        let client3 = await hub.get('8377');
+        window.editor3 = new Editor(client3);
+
         showContent();
-        window.editor = new Editor(client);
     }
     catch (err)
     {

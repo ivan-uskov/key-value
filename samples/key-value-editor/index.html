@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Key-Value Table Editor</title>
@@ -9,54 +9,54 @@
     <script src="mdl/material.min.js"></script>
     <script src="../../js-sdk/index.js"></script>
     <script src="js/index.js"></script>
-  </head>
-  <body>
-    <div id="editor-load-spinner">
-      <div class="mdl-spinner mdl-js-spinner is-active"></div>
-    </div>
-    <div id="editor-content-grid" class="mdl-grid">
-      <div class="mdl-cell mdl-cell--4-col">
+</head>
+<body>
+<div id="editor-load-spinner">
+    <div class="mdl-spinner mdl-js-spinner is-active"></div>
+</div>
+<div id="editor-content-grid" class="mdl-grid">
+    <template id="instance_values">
         <div class="editor-card-add-form mdl-card mdl-shadow--2dp">
-          <h4>Add new key/value</h4>
-          <form action="#">
-            <div class="mdl-textfield mdl-js-textfield">
-              <input class="mdl-textfield__input" type="text" required id="editor-add-form-key">
-              <label class="mdl-textfield__label" for="editor-add-form-key">Key...</label>
-              <span class="mdl-textfield mdl-data-table--selectable__error">Should be non-empty</span>
-            </div>
-            <div class="mdl-textfield mdl-js-textfield">
-              <input class="mdl-textfield__input" type="text" required id="editor-add-form-value">
-              <label class="mdl-textfield__label" for="editor-add-form-value">Value...</label>
-              <span class="mdl-textfield__error">Should be non-empty</span>
-            </div>
-            <button id="editor-add-form-add" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored">
-              Add
-            </button>
-            <button id="editor-add-form-remove" class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent">
-              Remove
-            </button>
-          </form>
+            <h4 class="main_title">Add new key/value</h4>
+            <form action="#">
+                <div class="mdl-textfield mdl-js-textfield">
+                    <input class="mdl-textfield__input editor-add-form-key" type="text" required>
+                    <label class="mdl-textfield__label" for="editor-add-form-key">Key...</label>
+                    <span class="mdl-textfield mdl-data-table--selectable__error">Should be non-empty</span>
+                </div>
+                <div class="mdl-textfield mdl-js-textfield">
+                    <input class="mdl-textfield__input editor-add-form-value" type="text" required>
+                    <label class="mdl-textfield__label" for="editor-add-form-value">Value...</label>
+                    <span class="mdl-textfield__error">Should be non-empty</span>
+                </div>
+                <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored editor-add-form-add">
+                    Add
+                </button>
+                <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent editor-add-form-remove">
+                    Remove
+                </button>
+            </form>
+            <br/>
+            <table class="editor-key-value-table mdl-data-table mdl-js-data-table mdl-shadow--2dp">
+                <thead>
+                <tr>
+                    <th class="mdl-data-table__cell--non-numeric">Key</th>
+                    <th>Value</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
         </div>
-      </div>
-      <div class="mdl-cell mdl-cell--8-col">
-        <table id="editor-key-value-table" class="mdl-data-table mdl-js-data-table mdl-shadow--2dp">
-          <thead>
-            <tr>
-              <th class="mdl-data-table__cell--non-numeric">Key</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody>
-          </tbody>
-        </table>
-        <template id="editor-key-value-row">
-          <tr>
+    </template>
+    <template id="editor-key-value-row">
+        <tr>
             <td class="mdl-data-table__cell--non-numeric"></td>
             <td></td>
             <td></td>
-          </tr>
-        </template>
-      </div>
-    </div>
-  </body>
+        </tr>
+    </template>
+    <div class="clear"></div>
+</div>
+</body>
 </html>

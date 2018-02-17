@@ -246,6 +246,12 @@ class InstanceApiClient extends BaseApiClient {
      */
     constructor(config) {
         super(config.getKeyValueApiUrl(), config.isVerbose());
+
+        this.cofig = config;
+    }
+
+    getConfig() {
+        return this.cofig;
     }
 
     /**
