@@ -9,6 +9,10 @@ import (
 	"key-value/lib/ws"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"context"
 )
 
 func createRunner(reg Register) routers.RequestStrategy {
@@ -79,6 +83,22 @@ func createRemover(reg Register) routers.RequestStrategy {
 
 var addr = flag.String("addr", ":8372", "http service address")
 
+func getKillSignalChan() chan os.Signal {
+	osKillSignalChan := make(chan os.Signal, 1)
+	signal.Notify(osKillSignalChan, os.Kill, os.Interrupt, syscall.SIGTERM)
+	return osKillSignalChan
+}
+
+func waitForKillSignal(killSignalChan chan os.Signal) {
+	killSignal := <-killSignalChan
+	switch killSignal {
+	case os.Interrupt:
+		log.Println("got SIGINT...")
+	case syscall.SIGTERM:
+		log.Println("got SIGTERM...")
+	}
+}
+
 func main() {
 	flag.Parse()
 
@@ -93,5 +113,16 @@ func main() {
 		server.Serve(w, r, router.CreateWebSocketHandler())
 	})
 
-	log.Fatal(http.ListenAndServe(*addr, nil))
+	killChan := getKillSignalChan()
+	srv := &http.Server{Addr:    *addr}
+	go func() {
+		log.Fatal(srv.ListenAndServe())
+	}()
+
+	waitForKillSignal(killChan)
+
+	srv.Shutdown(context.Background())
+	for _, i := range register.List() {
+		i.Kill()
+	}
 }
