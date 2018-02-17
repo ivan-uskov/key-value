@@ -34,9 +34,9 @@ func (s *registerStructure) Get(key string) (Instance, bool) {
 	data, ok := s.data.Load(key)
 	if ok {
 		return data.(Instance), ok
-	} else {
-		return nil, ok
 	}
+
+	return nil, ok
 }
 
 func (s *registerStructure) Exists(address string) bool {

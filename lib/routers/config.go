@@ -13,10 +13,11 @@ type Request struct {
 	Action  string `json:"action"`
 	Option1 string `json:"option_1"`
 	Option2 string `json:"option_2"`
+	Version int64  `json:"ver"`
 }
 
 type Response struct {
-	Success bool `json:"success"`
+	Success bool   `json:"success"`
 	Error   string `json:"error"`
 	Result  string `json:"result"`
 }

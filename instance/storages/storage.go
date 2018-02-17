@@ -14,17 +14,14 @@ type record struct {
 	ver   int64
 }
 
-type DataHandler interface {
-	HandleRemoved(key string, version int64)
-	HandleUpdated(key string, value string, version int64)
-}
-
 type Storage interface {
 	Set(string, string)
 	Get(string) (string, bool)
 	Remove(key string) bool
 	List() map[string]string
 
+	SetWithVersion(string, string, int64)
+	RemoveWithVersion(string, int64)
 	AddSetHandler(sh SetHandler)
 	AddRemoveHandler(rh RemoveHandler)
 }
@@ -35,6 +32,24 @@ func New() Storage {
 		setHandler:    nil,
 		removeHandler: nil,
 	}
+}
+
+func (s *storage) SetWithVersion(key string, val string, ver int64) {
+	s.data.Update(key, func(exist bool, valueInMap interface{}) {
+		if exist {
+			rec := valueInMap.(record)
+			if rec.ver < ver {
+				rec.value = val
+				rec.ver = ver
+			}
+		}
+	})
+}
+
+func (s *storage) RemoveWithVersion(key string, ver int64) {
+	s.data.PopIf(key, func(b bool, i interface{}) bool {
+		return b && (i.(record).ver < ver)
+	})
 }
 
 func (s *storage) AddSetHandler(sh SetHandler) {
@@ -76,11 +91,12 @@ func (s *storage) Get(key string) (string, bool) {
 		rec.ver++
 		return rec
 	})
-	if ok {
-		return data.(record).value, ok
-	} else {
+
+	if !ok {
 		return ``, ok
 	}
+
+	return data.(record).value, ok
 }
 
 func (s *storage) Remove(key string) bool {

@@ -23,15 +23,16 @@ func createRunner(reg Register) routers.RequestStrategy {
 					i.Kill()
 					reg.Remove(r.Option1)
 					return ``, err
-				} else {
-					fmt.Printf("%s restarted by request \n", r.Option1)
 				}
+
+				fmt.Printf("%s restarted by request \n", r.Option1)
 			}
 		} else {
 			i, err := NewInstance(r.Option1)
 			if err != nil {
 				return ``, err
 			}
+
 			reg.Add(r.Option1, i)
 			fmt.Printf("Run new instance on %s\n", r.Option1)
 		}

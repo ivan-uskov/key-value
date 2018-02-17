@@ -35,15 +35,27 @@ func (m ConcurrentMap) Get(key string, updater func(interface{}) interface{}) (i
 }
 
 type Upserter func(exist bool, valueInMap interface{}) interface{}
+type Updater func(exist bool, valueInMap interface{})
 
 func (m ConcurrentMap) Upsert(key string, cb Upserter) (res interface{}) {
 	shard := m.getShard(key)
 	shard.Lock()
+	defer shard.Unlock()
+
 	v, ok := shard.items[key]
 	res = cb(ok, v)
 	shard.items[key] = res
-	shard.Unlock()
+
 	return res
+}
+
+func (m ConcurrentMap) Update(key string, cb Updater) {
+	shard := m.getShard(key)
+	shard.Lock()
+	defer shard.Unlock()
+
+	v, ok := shard.items[key]
+	cb(ok, v)
 }
 
 func (m ConcurrentMap) Items() map[string]interface{} {
@@ -112,6 +124,17 @@ func (m ConcurrentMap) Pop(key string) (v interface{}, exists bool) {
 	shard.Lock()
 	v, exists = shard.items[key]
 	delete(shard.items, key)
+	shard.Unlock()
+	return v, exists
+}
+
+func (m ConcurrentMap) PopIf(key string, pred func(bool, interface{}) bool) (v interface{}, exists bool) {
+	shard := m.getShard(key)
+	shard.Lock()
+	v, exists = shard.items[key]
+	if pred(exists, v) {
+		delete(shard.items, key)
+	}
 	shard.Unlock()
 	return v, exists
 }

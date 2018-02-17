@@ -35,13 +35,13 @@ func createMessageHandler(handler requestHandler) ws.RequestHandler {
 
 		response := handler(request)
 
-		responseJson, err := json.Marshal(response)
+		responseJSON, err := json.Marshal(response)
 		if err != nil {
 			msg := fmt.Sprintf(`Message: '%s' encode response failed: %s`, message, err.Error())
 			log.Println(msg)
 			return []byte(msg)
 		}
 
-		return responseJson
+		return responseJSON
 	}
 }

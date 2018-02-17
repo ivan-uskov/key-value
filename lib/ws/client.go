@@ -16,17 +16,17 @@ type ClientConnection interface {
 }
 
 type clientConnection struct {
-	requestId int64
+	requestID int64
 	queries   sync.Map
 	ws        *websocket.Conn
 	done      chan bool
 }
 
 func (c *clientConnection) handleResponse(res *response) {
-	resChan, ok := c.queries.Load(res.RequestId)
+	resChan, ok := c.queries.Load(res.RequestID)
 	if ok {
 		resChan.(chan string) <- res.Payload
-		c.queries.Delete(res.RequestId)
+		c.queries.Delete(res.RequestID)
 	}
 }
 
@@ -62,9 +62,9 @@ func (c *clientConnection) Close() {
 const TIMEOUT  = 60
 
 func (c *clientConnection) Send(msg string) (<-chan string, error) {
-	c.requestId++
+	c.requestID++
 	req := request{
-		RequestId: c.requestId,
+		RequestID: c.requestID,
 		Payload:   msg,
 	}
 	message, err := json.Marshal(req)
@@ -74,11 +74,11 @@ func (c *clientConnection) Send(msg string) (<-chan string, error) {
 
 	resultChan := make(chan string, 1)
 	c.ws.WriteMessage(websocket.TextMessage, message)
-	c.queries.Store(req.RequestId, resultChan)
+	c.queries.Store(req.RequestID, resultChan)
 	go func() {
 		select {
 		case <-time.After(time.Second * TIMEOUT):
-			c.queries.Delete(req.RequestId)
+			c.queries.Delete(req.RequestID)
 		}
 	}()
 	return resultChan, nil
@@ -106,7 +106,7 @@ func NewClient(address string, path string) (ClientConnection, error) {
 	}
 
 	con := &clientConnection{
-		requestId: 0,
+		requestID: 0,
 		queries:   sync.Map{},
 		ws:        rawConnection,
 		done:      make(chan bool, 1),

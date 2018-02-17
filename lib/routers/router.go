@@ -3,7 +3,6 @@ package routers
 import (
 	"fmt"
 	"key-value/lib/ws"
-	"errors"
 )
 
 type Router interface {
@@ -23,7 +22,7 @@ func (r *router) getActionStrategy(action string) RequestStrategy {
 	s, ok := r.routing[action]
 	if !ok {
 		return func(r Request) (string, error) {
-			return ``, errors.New(fmt.Sprintf(`Unexpected action: %d`, r.Action))
+			return ``, fmt.Errorf(`unexpected action: %s`, r.Action)
 		}
 	}
 

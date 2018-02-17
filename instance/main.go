@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"regexp"
 	"key-value/instance/storages"
+	"key-value/instance/replication"
 )
 
 func createSetter(s storages.Storage) routers.RequestStrategy {
@@ -85,6 +86,13 @@ func createRouter(storage storages.Storage) routers.Router {
 	return r
 }
 
+func initializeReplication(storage storages.Storage) {
+	replication.NewServer(storage).Bind()
+	c := replication.NewClient()
+	storage.AddRemoveHandler(c.HandleRemoved)
+	storage.AddSetHandler(c.HandleUpdated)
+}
+
 func main() {
 	flag.Parse()
 
@@ -97,10 +105,12 @@ func main() {
 	})
 
 	portStr := regexp.MustCompile("[0-9]+$").FindString(*addr)
-	p := NewPersister(dataPath + "." + portStr, storage.List)
+	p := NewPersister(dataPath+"."+portStr, storage.List)
 	p.Load(storage.Set)
 	p.RunSaveLoop(persistenceDelay)
 	onShutDown(p.Persists)
+
+	initializeReplication(storage)
 
 	router := createRouter(storage)
 	server := ws.NewServer()

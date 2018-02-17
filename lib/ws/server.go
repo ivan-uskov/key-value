@@ -113,11 +113,11 @@ func createServerRequestHandler(rh RequestHandler) handler {
 		}
 
 		resp := response{
-			RequestId: r.RequestId,
-			Payload: string(rh([]byte(r.Payload))),
+			RequestID: r.RequestID,
+			Payload:   string(rh([]byte(r.Payload))),
 		}
 
-		responseJson, err := json.Marshal(resp)
+		responseJSON, err := json.Marshal(resp)
 		if err != nil {
 			msg := fmt.Sprintf(`Message: '%s' parse failed: %s`, message, err.Error())
 			log.Println(msg)
@@ -125,7 +125,7 @@ func createServerRequestHandler(rh RequestHandler) handler {
 			return
 		}
 
-		sendQueue <- responseJson
+		sendQueue <- responseJSON
 	}
 }
 
