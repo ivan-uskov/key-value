@@ -92,8 +92,6 @@ func main() {
 	http.HandleFunc("/ctl", func(w http.ResponseWriter, r *http.Request) {
 		server.Serve(w, r, router.CreateWebSocketHandler())
 	})
-	err := http.ListenAndServe(*addr, nil)
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
+
+	log.Fatal(http.ListenAndServe(*addr, nil))
 }

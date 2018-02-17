@@ -22,7 +22,7 @@ func NewPersister(filePath string, lister dataProvider) *Persister {
 }
 
 func (p *Persister) Load(s setter) {
-	f, err := os.Open(p.filePath)
+	f, err := os.OpenFile(p.filePath, os.O_APPEND|os.O_RDONLY|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		fmt.Println(err)
 		return

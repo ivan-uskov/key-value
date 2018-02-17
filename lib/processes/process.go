@@ -24,7 +24,7 @@ func (w *worker) GetStopChan() chan bool {
 	return w.stopChan
 }
 
-func Run(cmd string, args []string) (Worker, error) {
+func Run(cmd string, args ...string) (Worker, error) {
 	w := &worker{make(chan bool, 1), make(chan bool, 1), make(chan bool, 1)}
 
 	errChan := make(chan error, 1)

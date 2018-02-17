@@ -76,8 +76,7 @@ func (i *instance) start() error {
 		return err
 	}
 
-	args := []string{fmt.Sprintf(`--addr=%s`, i.address)}
-	i.worker, err = processes.Run(instancePath, args)
+	i.worker, err = processes.Run(instancePath, `-addr`, i.address)
 	if err != nil {
 		return err
 	}
