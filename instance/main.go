@@ -86,11 +86,11 @@ func createRouter(storage storages.Storage) routers.Router {
 	return r
 }
 
-func initializeReplication(storage storages.Storage) {
-	replication.NewServer(storage).Bind()
+func initializeReplication(s storages.Storage) {
 	c := replication.NewClient()
-	storage.AddRemoveHandler(c.HandleRemoved)
-	storage.AddSetHandler(c.HandleUpdated)
+	s.AddRemoveHandler(c.HandleRemoved)
+	s.AddSetHandler(c.HandleUpdated)
+	replication.NewServer(s, c).Bind()
 }
 
 func main() {

@@ -13,10 +13,11 @@ type Server interface {
 
 type server struct {
 	storage storages.Storage
+	client Client
 }
 
-func NewServer(storage storages.Storage) Server {
-	return &server{storage}
+func NewServer(storage storages.Storage, client Client) Server {
+	return &server{storage, client}
 }
 
 func (s *server) Bind() {
@@ -36,6 +37,11 @@ func (s *server) createRouter() routers.Router {
 
 	r.AddRoute(removed, func(r routers.Request) (string, error) {
 		s.storage.RemoveWithVersion(r.Option1, r.Version)
+		return ``, nil
+	})
+
+	r.AddRoute(newNode, func(r routers.Request) (string, error) {
+		s.client.AddNode(r.Option1)
 		return ``, nil
 	})
 
