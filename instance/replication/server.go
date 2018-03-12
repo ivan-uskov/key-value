@@ -40,10 +40,5 @@ func (s *server) createRouter() routers.Router {
 		return ``, nil
 	})
 
-	r.AddRoute(newNode, func(r routers.Request) (string, error) {
-		s.client.AddNode(r.Option1)
-		return ``, nil
-	})
-
 	return r
 }
