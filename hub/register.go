@@ -21,6 +21,7 @@ type Register interface {
 	Remove(key string)
 	Get(key string) (Instance, bool)
 	List() map[string]Instance
+	Keys() []string
 	RWLocker
 }
 
@@ -56,6 +57,15 @@ func (s *registerStructure) List() map[string]Instance {
 	result := make(map[string]Instance)
 	s.data.Range(func(k, v interface{}) bool {
 		result[k.(string)] = v.(Instance)
+		return true
+	})
+	return result
+}
+
+func (s *registerStructure) Keys() []string {
+	var result []string
+	s.data.Range(func(k, v interface{}) bool {
+		result = append(result, k.(string))
 		return true
 	})
 	return result

@@ -19,10 +19,12 @@ func createRunner(reg Register) routers.RequestStrategy {
 	return func(r routers.Request) (string, error) {
 		reg.Lock()
 		defer reg.Unlock()
+
+		keys := reg.Keys()
 		i, ok := reg.Get(r.Option1)
 		if ok {
 			if !i.Ping() {
-				err := i.Restart()
+				err := i.Restart(keys)
 				if err != nil {
 					i.Kill()
 					reg.Remove(r.Option1)
@@ -32,7 +34,7 @@ func createRunner(reg Register) routers.RequestStrategy {
 				fmt.Printf("%s restarted by request \n", r.Option1)
 			}
 		} else {
-			i, err := NewInstance(r.Option1)
+			i, err := NewInstance(r.Option1, keys)
 			if err != nil {
 				return ``, err
 			}

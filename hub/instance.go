@@ -9,11 +9,12 @@ import (
 	"key-value/lib/routers"
 	"sync"
 	"time"
+	"encoding/json"
 )
 
 type Instance interface {
 	Ping() bool
-	Restart() error
+	Restart(others []string) error
 	Kill()
 }
 
@@ -21,13 +22,13 @@ type instance struct {
 	address             string
 	worker              processes.Worker
 	ws                  routers.Client
+	rws                 routers.Client
 	sync.RWMutex
-	stopRestartLoopChan chan bool
 }
 
-func NewInstance(address string) (Instance, error) {
-	i := &instance{address, nil, nil, sync.RWMutex{}, nil}
-	err := i.start()
+func NewInstance(address string, others []string) (Instance, error) {
+	i := &instance{address: address, RWMutex: sync.RWMutex{}}
+	err := i.start(others)
 
 	if err != nil {
 		i = nil
@@ -49,17 +50,16 @@ func (i *instance) Kill() {
 	i.Unlock()
 }
 
-func (i *instance) Restart() error {
+func (i *instance) Restart(others []string) error {
 	i.Lock()
 	defer i.Unlock()
 
 	i.unsafeKill()
-	return i.start()
+	return i.start(others)
 }
 
 func (i *instance) unsafeKill() {
 	if i.launched() {
-		i.stopRestartLoopChan <- true
 		i.ws.Close()
 		i.ws = nil
 		i.worker.Kill()
@@ -71,7 +71,29 @@ func (i *instance) launched() bool {
 	return i.ws != nil && i.worker != nil
 }
 
-func (i *instance) start() error {
+func (i *instance) start(others []string) error {
+	err := i.runWorker()
+	if err != nil {
+		return err
+	}
+
+	err = i.createWS()
+	if err != nil {
+		i.worker.Kill()
+		i.worker = nil
+		return err
+	}
+
+	err = i.sendOther(others)
+	if err != nil {
+		i.unsafeKill()
+		return err
+	}
+
+	return nil
+}
+
+func (i *instance) runWorker() error {
 	instancePath, err := getInstanceExecutablePath()
 	if err != nil {
 		return err
@@ -83,47 +105,42 @@ func (i *instance) start() error {
 	}
 
 	time.Sleep(50 * time.Millisecond)
+	return nil
+}
+
+func (i *instance) createWS() error {
+	var err error
 	i.ws, err = routers.NewClient(i.address, `ws`)
 	if err != nil {
-		i.worker.Kill()
-		i.worker = nil
 		return err
 	}
 
 	resp, err := i.ws.SendSync(routers.Request{Action: routers.PING})
 	if err != nil {
-		i.unsafeKill()
+		i.ws.Close()
+		return err
+	} else if !resp.Success {
+		i.ws.Close()
+		return fmt.Errorf(resp.Error)
+	}
+
+	return nil
+}
+
+func (i *instance) sendOther(others []string) error {
+	data, err := json.Marshal(others)
+	if err != nil {
+		return err
+	}
+
+	resp, err := i.ws.SendSync(routers.Request{Action: `NODES`, Option1: string(data)})
+	if err != nil {
 		return err
 	} else if !resp.Success {
 		return fmt.Errorf(resp.Error)
 	}
 
-	i.runHandler()
-
 	return nil
-}
-
-func (i *instance) runHandler() {
-	i.stopRestartLoopChan = make(chan bool, 1)
-	go func() {
-		for {
-			select {
-			case <-i.stopRestartLoopChan:
-				fmt.Println(`stop restart`)
-				return
-			case <-i.worker.GetStopChan():
-				if i.launched() {
-					err := i.Restart()
-					if err != nil {
-						fmt.Printf("%s killed and got error on restart %v\n", i.address, err)
-					} else {
-						fmt.Printf("%s restarted\n", i.address)
-					}
-				}
-				return
-			}
-		}
-	}()
 }
 
 func getInstanceExecutablePath() (string, error) {
