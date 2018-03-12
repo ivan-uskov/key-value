@@ -2,24 +2,38 @@ package replication
 
 import (
 	"key-value/lib/routers"
+	"encoding/json"
 )
 
 type Client interface {
-	AddNode(addr string)
+	HandleNewNodesRequest(r routers.Request) (string, error)
 	HandleRemoved(key string, version int64)
 	HandleUpdated(key string, val string, version int64)
 }
 
 type client struct {
 	nodes map[string]routers.Client
+	selfAddress string
 }
 
-func NewClient() Client {
-	return &client{make(map[string]routers.Client)}
+func NewClient(selfAddress string) Client {
+	return &client{make(map[string]routers.Client), selfAddress}
 }
 
-func (c *client) AddNode(addr string) {
-	c.nodes[addr] = nil
+func (c *client) HandleNewNodesRequest(r routers.Request) (string, error) {
+	var addrs []string
+	err := json.Unmarshal([]byte(r.Option1), &addrs)
+	if err != nil {
+		return ``, err
+	}
+
+	for _, v := range addrs {
+		if c.selfAddress != v {
+			c.nodes[v] = nil
+		}
+	}
+
+	return ``, nil
 }
 
 func (c *client) HandleRemoved(key string, version int64) {

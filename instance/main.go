@@ -86,8 +86,17 @@ func createRouter(storage storages.Storage) routers.Router {
 	return r
 }
 
-func initializeReplication(s storages.Storage) {
-	c := replication.NewClient()
+func initializePersistence(storage storages.Storage) {
+	portStr := regexp.MustCompile("[0-9]+$").FindString(*addr)
+	p := NewPersister(dataPath+"."+portStr, storage.List)
+	p.Load(storage.Set)
+	p.RunSaveLoop(persistenceDelay)
+	onShutDown(p.Persists)
+}
+
+func initializeReplication(s storages.Storage, router routers.Router, selfAddress string) {
+	c := replication.NewClient(selfAddress)
+	router.AddRoute(``, c.HandleNewNodesRequest)
 	s.AddRemoveHandler(c.HandleRemoved)
 	s.AddSetHandler(c.HandleUpdated)
 	replication.NewServer(s, c).Bind()
@@ -104,15 +113,11 @@ func main() {
 		log.Printf("Remove %s : %d", key, ver)
 	})
 
-	portStr := regexp.MustCompile("[0-9]+$").FindString(*addr)
-	p := NewPersister(dataPath+"."+portStr, storage.List)
-	p.Load(storage.Set)
-	p.RunSaveLoop(persistenceDelay)
-	onShutDown(p.Persists)
-
-	initializeReplication(storage)
+	initializePersistence(storage)
 
 	router := createRouter(storage)
+	initializeReplication(storage, router, *addr)
+
 	server := ws.NewServer()
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		server.Serve(w, r, router.CreateWebSocketHandler())
