@@ -96,7 +96,7 @@ func initializePersistence(storage storages.Storage) {
 
 func initializeReplication(s storages.Storage, router routers.Router, selfAddress string) {
 	c := replication.NewClient(selfAddress)
-	router.AddRoute(``, c.HandleNewNodesRequest)
+	router.AddRoute(`NODES`, c.HandleNewNodesRequest)
 	s.AddRemoveHandler(c.HandleRemoved)
 	s.AddSetHandler(c.HandleUpdated)
 	replication.NewServer(s, c).Bind()
