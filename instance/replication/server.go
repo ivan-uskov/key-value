@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"key-value/lib/routers"
 	"key-value/lib/ws"
+	log "github.com/sirupsen/logrus"
 )
 
 type Server interface {
@@ -31,11 +32,13 @@ func (s *server) Bind() {
 func (s *server) createRouter() routers.Router {
 	r := routers.NewRouter()
 	r.AddRoute(updated, func(r routers.Request) (string, error) {
+		log.WithFields(log.Fields{`r`:r}).Info(`Got sync update request`)
 		s.storage.SetWithVersion(r.Option1, r.Option2, r.Version)
 		return ``, nil
 	})
 
 	r.AddRoute(removed, func(r routers.Request) (string, error) {
+		log.WithFields(log.Fields{`r`:r}).Info(`Got sync remove request`)
 		s.storage.RemoveWithVersion(r.Option1, r.Version)
 		return ``, nil
 	})

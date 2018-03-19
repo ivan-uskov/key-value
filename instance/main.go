@@ -107,13 +107,6 @@ func main() {
 	initLogger()
 
 	storage := storages.New()
-	storage.AddSetHandler(func(key string, val string, ver int64) {
-		log.Printf("Set %s : %s : %d", key, val, ver)
-	})
-	storage.AddRemoveHandler(func(key string, ver int64) {
-		log.Printf("Remove %s : %d", key, ver)
-	})
-
 	initializePersistence(storage)
 
 	router := createRouter(storage)

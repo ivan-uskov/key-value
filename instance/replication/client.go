@@ -13,7 +13,7 @@ type Client interface {
 }
 
 type client struct {
-	nodes map[string]routers.Client
+	nodes       map[string]routers.Client
 	selfAddress string
 }
 
@@ -40,8 +40,9 @@ func (c *client) HandleNewNodesRequest(r routers.Request) (string, error) {
 }
 
 func (c *client) HandleRemoved(key string, version int64) {
+	log.WithFields(log.Fields{`key`: key, `ver`: version}).Info(`sync remove`)
 	c.forNodes(func(con routers.Client) {
-		con.SendSync(routers.Request{
+		c.sync(con, routers.Request{
 			Action:  removed,
 			Option1: key,
 			Version: version,
@@ -50,8 +51,9 @@ func (c *client) HandleRemoved(key string, version int64) {
 }
 
 func (c *client) HandleUpdated(key string, val string, version int64) {
+	log.WithFields(log.Fields{`key`: key, `val`: val, `ver`: version}).Info(`sync update`)
 	c.forNodes(func(con routers.Client) {
-		con.SendSync(routers.Request{
+		c.sync(con, routers.Request{
 			Action:  updated,
 			Option1: key,
 			Option2: val,
@@ -60,11 +62,20 @@ func (c *client) HandleUpdated(key string, val string, version int64) {
 	})
 }
 
+func (c *client) sync(con routers.Client, r routers.Request) {
+	log.WithFields(log.Fields{`r`: r}).Info(`sync`)
+	_, err := con.SendSync(r)
+	if err != nil {
+		log.Error(err)
+	}
+}
+
 func (c *client) forNodes(handler func(routers.Client)) {
 	for addr, con := range c.nodes {
 		if con == nil {
-			con, err := routers.NewClient(addr, `/ws`)
+			con, err := routers.NewClient(addr, `replication`)
 			if err != nil {
+				log.WithFields(log.Fields{`addr`:addr}).Error(err)
 				continue
 			}
 			c.nodes[addr] = con
