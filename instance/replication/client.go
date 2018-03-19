@@ -64,9 +64,11 @@ func (c *client) HandleUpdated(key string, val string, version int64) {
 
 func (c *client) sync(con routers.Client, r routers.Request) {
 	log.WithFields(log.Fields{`r`: r}).Info(`sync`)
-	_, err := con.SendSync(r)
+	resp, err := con.SendSync(r)
 	if err != nil {
 		log.Error(err)
+	} else {
+		log.WithFields(log.Fields{`resp`:resp}).Info(`sync sent`)
 	}
 }
 
