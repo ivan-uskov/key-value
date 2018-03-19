@@ -15,4 +15,5 @@
 .idea
 
 /**/*.data.*
+/**/*.log.*
 vendor/
