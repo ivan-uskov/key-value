@@ -124,6 +124,7 @@ func main() {
 		server.Serve(w, r, router.CreateWebSocketHandler())
 	})
 
+	log.WithFields(log.Fields{`addr`: *addr}).Info(`Listen`)
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 

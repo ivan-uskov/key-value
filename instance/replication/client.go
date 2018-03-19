@@ -3,6 +3,7 @@ package replication
 import (
 	"key-value/lib/routers"
 	"encoding/json"
+	log "github.com/sirupsen/logrus"
 )
 
 type Client interface {
@@ -32,6 +33,8 @@ func (c *client) HandleNewNodesRequest(r routers.Request) (string, error) {
 			c.nodes[v] = nil
 		}
 	}
+
+	log.WithFields(log.Fields{`nodes`: c.nodes}).Info(`got new nodes`)
 
 	return ``, nil
 }
