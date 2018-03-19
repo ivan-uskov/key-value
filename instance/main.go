@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"key-value/lib/ws"
 	"key-value/lib/routers"
@@ -58,7 +58,8 @@ func createRemover(reg storages.Storage) routers.RequestStrategy {
 
 var addr = flag.String("addr", ":8080", "http service address")
 
-const dataPath = "storage.data"
+const dataPath = "storage.data."
+const logPath = "storage.log."
 const persistenceDelay = 2 * time.Second
 
 func onShutDown(h func()) {
@@ -87,8 +88,7 @@ func createRouter(storage storages.Storage) routers.Router {
 }
 
 func initializePersistence(storage storages.Storage) {
-	portStr := regexp.MustCompile("[0-9]+$").FindString(*addr)
-	p := NewPersister(dataPath+"."+portStr, storage.List)
+	p := NewPersister(dataPath+getPort(), storage.List)
 	p.Load(storage.Set)
 	p.RunSaveLoop(persistenceDelay)
 	onShutDown(p.Persists)
@@ -104,6 +104,7 @@ func initializeReplication(s storages.Storage, router routers.Router, selfAddres
 
 func main() {
 	flag.Parse()
+	initLogger()
 
 	storage := storages.New()
 	storage.AddSetHandler(func(key string, val string, ver int64) {
@@ -124,4 +125,17 @@ func main() {
 	})
 
 	log.Fatal(http.ListenAndServe(*addr, nil))
+}
+
+func initLogger() {
+	log.SetFormatter(&log.JSONFormatter{})
+	file, err := os.OpenFile(logPath+getPort(), os.O_CREATE | os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.SetOutput(file)
+}
+
+func getPort() string {
+	return regexp.MustCompile("[0-9]+$").FindString(*addr)
 }
