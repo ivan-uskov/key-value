@@ -1,7 +1,8 @@
 package replication
 
 const (
-	updated = `u`
-	removed = `r`
-	path    = `/replication`
+	updated  = `u`
+	removed  = `r`
+	register = `register`
+	path     = `replication`
 )
