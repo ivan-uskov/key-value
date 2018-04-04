@@ -83,6 +83,6 @@ func (c *client) forNodes(handler func(routers.Client)) {
 			c.nodes[addr] = con
 		}
 
-		handler(con)
+		handler(c.nodes[addr])
 	}
 }

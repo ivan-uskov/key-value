@@ -58,9 +58,15 @@ func createRemover(reg storages.Storage) routers.RequestStrategy {
 
 var addr = flag.String("addr", ":8080", "http service address")
 
-const dataPath = "storage.data."
-const logPath = "storage.log."
 const persistenceDelay = 2 * time.Second
+
+func getDataPath(port string) string {
+	return "storage."+port+".data"
+}
+
+func getLogPath(port string) string {
+	return "storage."+port+".log"
+}
 
 func onShutDown(h func()) {
 	var gracefulStop = make(chan os.Signal)
@@ -88,7 +94,7 @@ func createRouter(storage storages.Storage) routers.Router {
 }
 
 func initializePersistence(storage storages.Storage) {
-	p := NewPersister(dataPath+getPort(), storage.List)
+	p := NewPersister(getDataPath(getPort()), storage.List)
 	p.Load(storage.Set)
 	p.RunSaveLoop(persistenceDelay)
 	onShutDown(p.Persists)
@@ -123,7 +129,7 @@ func main() {
 
 func initLogger() {
 	log.SetFormatter(&log.JSONFormatter{})
-	file, err := os.OpenFile(logPath+getPort(), os.O_CREATE | os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile(getLogPath(getPort()), os.O_CREATE | os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
