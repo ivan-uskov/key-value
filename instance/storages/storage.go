@@ -35,14 +35,18 @@ func New() Storage {
 }
 
 func (s *storage) SetWithVersion(key string, val string, ver int64) {
-	s.data.Update(key, func(exist bool, valueInMap interface{}) {
-		if exist {
-			rec := valueInMap.(record)
-			if rec.ver < ver {
-				rec.value = val
-				rec.ver = ver
-			}
+	s.data.Upsert(key, func(exist bool, valueInMap interface{}) interface{} {
+		if !exist {
+			return record{val, ver}
 		}
+
+		rec := valueInMap.(record)
+		if rec.ver < ver {
+			rec.value = val
+			rec.ver = ver
+		}
+
+		return rec
 	})
 }
 
