@@ -4,6 +4,7 @@ import (
 	"key-value/lib/routers"
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
+	"sync"
 )
 
 type Client interface {
@@ -14,15 +15,22 @@ type Client interface {
 }
 
 type client struct {
-	nodes       map[string]routers.Client
+	sync.Mutex
+	nodes map[string]routers.Client
 	selfAddress string
 }
 
 func NewClient(selfAddress string) Client {
-	return &client{make(map[string]routers.Client), selfAddress}
+	return &client{
+		Mutex: sync.Mutex{},
+		nodes: map[string]routers.Client{},
+		selfAddress: selfAddress,
+	}
 }
 
 func (c *client) HandleRegisterRequest(r routers.Request) (string, error) {
+	c.Lock()
+	defer c.Unlock()
 	if c.selfAddress != r.Option1 {
 		log.WithField(`addr`, r.Option1).Info(`new node registered`)
 		c.nodes[r.Option1] = nil
@@ -37,11 +45,13 @@ func (c *client) HandleNewNodesRequest(r routers.Request) (string, error) {
 		return ``, err
 	}
 
+	c.Lock()
 	for _, v := range addrs {
 		if c.selfAddress != v {
 			c.nodes[v] = nil
 		}
 	}
+	c.Unlock()
 
 	log.WithFields(log.Fields{`nodes`: c.nodes}).Info(`got new nodes`)
 	go func() {
@@ -90,6 +100,8 @@ func (c *client) sync(con routers.Client, r routers.Request) {
 }
 
 func (c *client) forNodes(handler func(routers.Client)) {
+	c.Lock()
+	defer c.Unlock()
 	for addr, con := range c.nodes {
 		if con == nil {
 			con, err := routers.NewClient(addr, path)
