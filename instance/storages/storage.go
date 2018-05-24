@@ -41,7 +41,7 @@ func (s *storage) SetWithVersion(key string, val string, ver int64) {
 		}
 
 		rec := valueInMap.(record)
-		if rec.ver < ver {
+		if rec.ver <= ver {
 			rec.value = val
 			rec.ver = ver
 		}
@@ -52,7 +52,7 @@ func (s *storage) SetWithVersion(key string, val string, ver int64) {
 
 func (s *storage) RemoveWithVersion(key string, ver int64) {
 	s.data.PopIf(key, func(b bool, i interface{}) bool {
-		return b && (i.(record).ver < ver)
+		return b && (i.(record).ver <= ver)
 	})
 }
 
