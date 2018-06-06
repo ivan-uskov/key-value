@@ -59,13 +59,14 @@ func createRemover(reg storages.Storage) routers.RequestStrategy {
 var addr = flag.String("addr", ":8080", "http service address")
 
 const persistenceDelay = 2 * time.Second
+const tmpDir = `tmp`
 
 func getDataPath(port string) string {
-	return "storage."+port+".data"
+	return tmpDir+"/storage."+port+".data"
 }
 
 func getLogPath(port string) string {
-	return "storage."+port+".log"
+	return tmpDir+"/storage."+port+".log"
 }
 
 func onShutDown(h func()) {
@@ -110,6 +111,7 @@ func initializeReplication(s storages.Storage, router routers.Router, selfAddres
 
 func main() {
 	flag.Parse()
+	os.Mkdir(tmpDir, os.ModePerm)
 	initLogger()
 
 	storage := storages.New()

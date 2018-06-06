@@ -1,17 +1,22 @@
-# Homemade Key-Value storage written in Go
+# Key-Value storage written in Go
 
-Key-value database written in Golang, like memcached.
+Simple Key-value database written in Golang, with master-master replication.
 
 [Project Blueprint](https://docs.google.com/document/d/1nlWI7z_yUeaDETZcxd-OPn5jvd1l9CAl2SCkpZrbmak/edit?usp=sharing)
 
-## Build & Run Example
+## Dependencies
+1) [Golang](https://golang.org/dl/) latest
+2) [Dep](https://github.com/golang/dep) can be installed with `go get -u github.com/golang/dep/cmd/dep`
 
-1. Build `hub` and `instance` using `go build`
-2. Run `hub` (hub runs instance on demand)
-3. Open `samples/key-value-editor/index.html` and add a few key-value pairs
-4. Reload page - table content should be preserved
+## Build
+1) `cd` project root
+2) `dep ensure -vendor-only`
+3) `go build ./hub`
+4) `go build ./instance`
 
-![Screenshot](assets/key-value-editor.png)
+## Run
+1) `hub.exe`
+2) `google-chrome samples/key-value-editor/index.html`
 
 ## Javascript SDK
 

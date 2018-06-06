@@ -104,12 +104,14 @@ async function runEditor() {
     {
         let config = new Config('localhost', '8372', true);
         let hub = new HubApiClient(config);
-        let client1 = await hub.get('8375');
-        window.editor1 = new Editor(client1);
-        let client2 = await hub.get('8376');
-        window.editor2 = new Editor(client2);
-        let client3 = await hub.get('8377');
-        window.editor3 = new Editor(client3);
+
+        const count = 10;
+        for (let i = 0; i < count; ++i)
+        {
+            const num = i;
+            const client = await hub.get('' + (8376 + num));
+            window['editor' + num] = new Editor(client);
+        }
 
         showContent();
     }
